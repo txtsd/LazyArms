@@ -1,0 +1,6 @@
+## Interface: 11200
+## Title: LazyArms
+## Notes: One button 2H Arms rotation for Warriors
+## SavedVariables:
+
+LazyArms.lua
