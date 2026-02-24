@@ -58,11 +58,13 @@ local rotation = {
     next = 2,
     condition = function()
       local slam_cd = GetSpellIdCooldown(45961) -- Slam (Rank 5)
+      local distance = UnitXP("distanceBetween", "player", "target")
       if
         GetUnitField("player", "power2") >= 15
         and slam_cd.isOnCooldown == 0
         and rotationState.queued_attack ~= "Mortal Strike"
         and rotationState.queued_attack ~= "Whirlwind"
+        and distance <= 5
       then
         return true
       end
@@ -83,11 +85,13 @@ local rotation = {
     next = 4,
     condition = function()
       local mortalstrike_cd = GetSpellIdCooldown(27580) -- Mortal Strike (Rank 4)
+      local distance = UnitXP("distanceBetween", "player", "target")
       if
         GetUnitField("player", "power2") >= 30
         and mortalstrike_cd.isOnCooldown == 0
         and rotationState.queued_attack ~= "Whirlwind"
         and not IsCurrentAction(62)
+        and distance <= 5
       then
         return true
       end
@@ -99,11 +103,13 @@ local rotation = {
     next = 5,
     condition = function()
       local slam_cd = GetSpellIdCooldown(45961) -- Slam (Rank 5)
+      local distance = UnitXP("distanceBetween", "player", "target")
       if
         GetUnitField("player", "power2") >= 15
         and slam_cd.isOnCooldown == 0
         and rotationState.queued_attack ~= "Mortal Strike"
         and rotationState.queued_attack ~= "Whirlwind"
+        and distance <= 5
       then
         return true
       end
@@ -123,11 +129,13 @@ local rotation = {
     next = 7,
     condition = function()
       whirlwind_cd = GetSpellIdCooldown(1680) -- Whirlwind
+      local distance = UnitXP("distanceBetween", "player", "target")
       if
         GetUnitField("player", "power2") >= 25
         and whirlwind_cd.isOnCooldown == 0
         and rotationState.queued_attack ~= "Mortal Strike"
         and not IsCurrentAction(62)
+        and distance <= 8
       then
         return true
       end
@@ -139,11 +147,13 @@ local rotation = {
     next = 8,
     condition = function()
       local slam_cd = GetSpellIdCooldown(45961) -- Slam (Rank 5)
+      local distance = UnitXP("distanceBetween", "player", "target")
       if
         GetUnitField("player", "power2") >= 15
         and slam_cd.isOnCooldown == 0
         and rotationState.queued_attack ~= "Mortal Strike"
         and rotationState.queued_attack ~= "Whirlwind"
+        and distance <= 5
       then
         return true
       end
