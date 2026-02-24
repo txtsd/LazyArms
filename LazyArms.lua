@@ -19,6 +19,12 @@ local function get_sunder_stacks()
   return 0
 end
 
+local function in_combat()
+  local flags = GetUnitField("player", "flags")
+  local UNIT_FLAG_IN_COMBAT = 524288
+  return bit.band(flags, UNIT_FLAG_IN_COMBAT) ~= 0
+end
+
 local function run()
   -- ==========
   -- Auto Attack
@@ -42,19 +48,15 @@ local function run()
     -- local intervene = GetSpellIdCooldown(45595) -- Intervene (Rank 1)
     local distance = UnitXP("distanceBetween", "player", "target")
     if distance >= 8 and distance <= 25 then
-      if not UnitAffectingCombat("player") and charge.isOnCooldown == 0 then
+      if not in_combat() and charge.isOnCooldown == 0 then
         print("Charging!")
         CastSpellByName("Charge")
         return
-      elseif
-        UnitAffectingCombat("player")
-        and intercept.isOnCooldown == 0
-        and GetUnitField("player", "power2") >= 10
-      then
+      elseif in_combat() and intercept.isOnCooldown == 0 and GetUnitField("player", "power2") >= 10 then
         print("Intercepting!")
         CastSpellByName("Intercept")
         return
-        -- elseif UnitAffectingCombat("player") and intervene.isOnCooldown == 0 then
+        -- elseif in_combat() and intervene.isOnCooldown == 0 then
         --   print("Intervening!")
         --   CastSpellByName("Intervene")
       end
