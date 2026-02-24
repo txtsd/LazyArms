@@ -1,5 +1,7 @@
 local libdebuff = pfUI and pfUI.env and pfUI.env.libdebuff
 
+SetCVar("NP_EnableAutoAttackEvents", "1")
+
 local function get_sunder_stacks()
   if not libdebuff then
     print("No libdebuff")
@@ -38,6 +40,160 @@ local function has_buff(buff_name)
   return false
 end
 
+-- Saved variable for persistence
+local rotationState = rotationState
+  or {
+    stepIndex = 1,
+    lastAction = nil,
+    nextStepAfter = nil,
+    waitingFor = nil,
+    queued_attack = nil,
+  }
+
+-- Define the rotation as a state machine
+local rotation = {
+  -- Step 1: Slam
+  {
+    spell = "Slam",
+    next = 2,
+    condition = function()
+      local slam_cd = GetSpellIdCooldown(45961) -- Slam (Rank 5)
+      if
+        GetUnitField("player", "power2") >= 15
+        and slam_cd.isOnCooldown == 0
+        and rotationState.queued_attack ~= "Mortal Strike"
+        and rotationState.queued_attack ~= "Whirlwind"
+      then
+        return true
+      end
+    end,
+  },
+  -- Step 2: Wait for Auto
+  {
+    waitFor = "auto",
+    next = 3,
+    condition = function()
+      -- Check if auto attack just happened
+      return GetTime() - (rotationState.lastAutoTime or 0) > 0.1
+    end,
+  },
+  -- Step 3: Mortal Strike
+  {
+    spell = "Mortal Strike",
+    next = 4,
+    condition = function()
+      local mortalstrike_cd = GetSpellIdCooldown(27580) -- Mortal Strike (Rank 4)
+      if
+        GetUnitField("player", "power2") >= 30
+        and mortalstrike_cd.isOnCooldown == 0
+        and rotationState.queued_attack ~= "Whirlwind"
+        and not IsCurrentAction(62)
+      then
+        return true
+      end
+    end,
+  },
+  -- Step 4: Slam
+  {
+    spell = "Slam",
+    next = 5,
+    condition = function()
+      local slam_cd = GetSpellIdCooldown(45961) -- Slam (Rank 5)
+      if
+        GetUnitField("player", "power2") >= 15
+        and slam_cd.isOnCooldown == 0
+        and rotationState.queued_attack ~= "Mortal Strike"
+        and rotationState.queued_attack ~= "Whirlwind"
+      then
+        return true
+      end
+    end,
+  },
+  -- Step 5: Wait for Auto
+  {
+    waitFor = "auto",
+    next = 6,
+    condition = function()
+      return GetTime() - (rotationState.lastAutoTime or 0) > 0.1
+    end,
+  },
+  -- Step 6: Whirlwind
+  {
+    spell = "Whirlwind",
+    next = 7,
+    condition = function()
+      whirlwind_cd = GetSpellIdCooldown(1680) -- Whirlwind
+      if
+        GetUnitField("player", "power2") >= 25
+        and whirlwind_cd.isOnCooldown == 0
+        and rotationState.queued_attack ~= "Mortal Strike"
+        and not IsCurrentAction(62)
+      then
+        return true
+      end
+    end,
+  },
+  -- Step 7: Slam
+  {
+    spell = "Slam",
+    next = 8,
+    condition = function()
+      local slam_cd = GetSpellIdCooldown(45961) -- Slam (Rank 5)
+      if
+        GetUnitField("player", "power2") >= 15
+        and slam_cd.isOnCooldown == 0
+        and rotationState.queued_attack ~= "Mortal Strike"
+        and rotationState.queued_attack ~= "Whirlwind"
+      then
+        return true
+      end
+    end,
+  },
+  -- Step 8: Wait for Auto
+  {
+    waitFor = "auto",
+    next = 3, -- Loop back to Mortal Strike
+    condition = function()
+      return GetTime() - (rotationState.lastAutoTime or 0) > 0.1
+    end,
+  },
+}
+
+-- Track when auto attacks happen
+local frame_autoattack = CreateFrame("Frame", "LazyArmsAutoAttack")
+frame_autoattack:RegisterEvent("AUTO_ATTACK_SELF")
+frame_autoattack:RegisterEvent("SPELL_DAMAGE_EVENT_SELF")
+frame_autoattack:RegisterEvent("SPELL_QUEUE_EVENT")
+frame_autoattack:SetScript("OnEvent", function()
+  if event == "AUTO_ATTACK_SELF" then
+    local attackerGuid = arg1
+    local targetGuid = arg2
+    local hitInfo = arg4
+    local victimState = arg5
+
+    if hitInfo then
+      -- print("Got autoattack event!")
+      rotationState.lastAutoTime = GetTime()
+    end
+  elseif event == "SPELL_DAMAGE_EVENT_SELF" then
+    local spellId = arg3
+    local hitInfo = arg6
+
+    if hitInfo then
+      -- print("Got hit event: " .. SpellInfo(spellId))
+    end
+  elseif event == "SPELL_QUEUE_EVENT" then
+    local eventCode = arg1
+    local spellId = arg2
+
+    if eventCode == 0 or eventCode == 2 or eventCode == 4 then
+      rotationState.queued_attack = SpellInfo(spellId)
+    elseif eventCode == 1 or eventCode == 3 or eventCode == 5 then
+      rotationState.queued_attack = nil
+    end
+  end
+end)
+
 local function run()
   -- ==========
   -- Auto Attack
@@ -62,15 +218,15 @@ local function run()
     local distance = UnitXP("distanceBetween", "player", "target")
     if distance >= 8 and distance <= 25 then
       if not in_combat() and charge.isOnCooldown == 0 then
-        print("Charging!")
+        -- print("Charging!")
         CastSpellByName("Charge")
         return
       elseif in_combat() and intercept.isOnCooldown == 0 and GetUnitField("player", "power2") >= 10 then
-        print("Intercepting!")
+        -- print("Intercepting!")
         CastSpellByName("Intercept")
         return
         -- elseif in_combat() and intervene.isOnCooldown == 0 then
-        --   print("Intervening!")
+        --   -- print("Intervening!")
         --   CastSpellByName("Intervene")
       end
     end
@@ -80,7 +236,7 @@ local function run()
   -- Battle Shout
   -- ==========
   if not has_buff("Battle Shout") then
-    print("Battle Shouting!")
+    -- print("Battle Shouting!")
     CastSpellByName("Battle Shout")
     return
   end
@@ -94,12 +250,29 @@ local function run()
       local sunder_stacks, sunder_timeleft = get_sunder_stacks()
       if sunder_stacks < 4 or sunder_timeleft < 5 then
         if GetUnitField("player", "power2") >= 10 and UnitExists("target") then
-          print("Sundering!")
+          -- print("Sundering!")
           CastSpellByName("Sunder Armor")
           return
         end
       end
     end
+  end
+
+  -- ==========
+  -- Reactions
+  -- ==========
+  local overpower = IsSpellUsable("Overpower")
+  local overpower_cd = GetSpellIdCooldown(11585) -- Overpower (Rank 4)
+  if overpower == 1 and GetUnitField("player", "power2") <= 50 and overpower_cd.isOnCooldown == 0 then
+    CastSpellByName("Overpower")
+    return
+  end
+
+  local revenge = IsSpellUsable("Revenge")
+  local revenge_cd = GetSpellIdCooldown(11601) -- Revenge (Rank 5)
+  if revenge == 1 and GetUnitField("player", "power2") <= 50 and revenge_cd.isOnCooldown == 0 then
+    CastSpellByName("Revenge")
+    return
   end
 
   -- ==========
@@ -109,23 +282,34 @@ local function run()
     local target_hp = GetUnitField("target", "health")
     local target_maxhp = GetUnitField("target", "maxHealth")
     if (target_hp / target_maxhp * 100) <= 20 and GetUnitField("player", "power2") >= 15 then
-      print("Executing!")
+      -- print("Executing!")
       CastSpellByName("Execute")
       return
     end
   end
 
-  -- if GetUnitField("player", "power2") > 15 and UnitExists("target") then
-  --   print("Slamming!")
-  --   CastSpellByName("Slam")
-  --   return
-  -- end
-  --
-  -- if GetUnitField("player", "power2") > 30 and UnitExists("target") then
-  --   print("Mortal Striking!")
-  --   CastSpellByName("Mortal Strike")
-  --   return
-  -- end
+  -- ==========
+  -- Rest of the rotation
+  -- ==========
+
+  local currentStep = rotation[rotationState.stepIndex]
+  if not currentStep then
+    rotationState.stepIndex = 1
+    return
+  end
+
+  -- Check if conditions are met
+  if currentStep.condition() then
+    -- Cast spell if this step has one
+    if currentStep.spell then
+      -- print("Casting: " .. currentStep.spell)
+      CastSpellByName(currentStep.spell)
+      rotationState.lastCast = currentStep.spell
+    end
+
+    -- Move to next step
+    rotationState.stepIndex = currentStep.next
+  end
 end
 
 SlashCmdList["LAZYARMS_SLASH"] = run
