@@ -1,0 +1,23 @@
+{
+  "$schema": "https://raw.githubusercontent.com/LuaLS/vscode-lua/master/setting/schema.json",
+  "diagnostics.globals": [
+    "arg",
+    "arg1",
+    "arg2",
+    "arg3",
+    "arg4",
+    "arg5",
+    "arg6",
+    "arg7",
+    "arg8",
+    "arg9",
+    "event"
+  ],
+  "runtime.version": "Lua 5.1",
+  "type.inferParamType": true,
+  "type.maxUnionVariants": 0,
+  "workspace.library": [
+    "~/git/wow-api-type-definitions/Client",
+    "~/git/wow-api-type-definitions/UI_Turtle"
+  ]
+}

@@ -1,6 +1,7 @@
 ## Interface: 11200
 ## Title: LazyArms
 ## Notes: One button 2H Arms rotation for Warriors
+## Dependencies: pfUI
 ## SavedVariables:
 
 LazyArms.lua
