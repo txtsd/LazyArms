@@ -25,6 +25,19 @@ local function in_combat()
   return bit.band(flags, UNIT_FLAG_IN_COMBAT) ~= 0
 end
 
+local function has_buff(buff_name)
+  for i = 1, 40 do
+    local _, _, buff_id = UnitBuff("player", i)
+    if buff_id then
+      local spell_name = SpellInfo(buff_id)
+      if spell_name == buff_name then
+        return true
+      end
+    end
+  end
+  return false
+end
+
 local function run()
   -- ==========
   -- Auto Attack
@@ -66,22 +79,10 @@ local function run()
   -- ==========
   -- Battle Shout
   -- ==========
-  local x = 0
-  for i = 1, 16 do
-    local _, _, buff_id = UnitBuff("player", i)
-    if buff_id then
-      local spell_name = SpellInfo(buff_id)
-      if spell_name == "Battle Shout" then
-        x = 1
-      end
-    end
-  end
-  if x == 0 then
-    if GetUnitField("player", "power2") >= 10 then
-      print("Battle Shouting!")
-      CastSpellByName("Battle Shout")
-      return
-    end
+  if not has_buff("Battle Shout") then
+    print("Battle Shouting!")
+    CastSpellByName("Battle Shout")
+    return
   end
 
   -- ==========
