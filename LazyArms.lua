@@ -284,7 +284,7 @@ local function run()
     local distance = UnitXP("distanceBetween", "player", "target")
     if distance <= 5 then
       local sunder_stacks, sunder_timeleft = get_sunder_stacks()
-      if sunder_stacks < 4 or sunder_timeleft < 5 then
+      if sunder_stacks < 5 or sunder_timeleft < 5 then
         if GetUnitField("player", "power2") >= 10 and UnitExists("target") then
           -- print("Sundering!")
           CastSpellByName("Sunder Armor")
