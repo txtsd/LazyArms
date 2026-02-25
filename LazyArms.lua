@@ -64,6 +64,7 @@ local rotation = {
         and slam_cd.isOnCooldown == 0
         and rotationState.queued_attack ~= "Mortal Strike"
         and rotationState.queued_attack ~= "Whirlwind"
+        and UnitExists("target")
         and distance <= 5
       then
         return true
@@ -110,6 +111,7 @@ local rotation = {
         and slam_cd.isOnCooldown == 0
         and rotationState.queued_attack ~= "Mortal Strike"
         and rotationState.queued_attack ~= "Whirlwind"
+        and UnitExists("target")
         and distance <= 5
       then
         return true
@@ -155,6 +157,7 @@ local rotation = {
         and slam_cd.isOnCooldown == 0
         and rotationState.queued_attack ~= "Mortal Strike"
         and rotationState.queued_attack ~= "Whirlwind"
+        and UnitExists("target")
         and distance <= 5
       then
         return true
