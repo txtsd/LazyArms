@@ -31,7 +31,7 @@ local function has_buff(buff_name)
   for i = 1, 40 do
     local _, _, buff_id = UnitBuff("player", i)
     if buff_id then
-      local spell_name = SpellInfo(buff_id)
+      local spell_name = GetSpellRecField(buff_id, "name")
       if spell_name == buff_name then
         return true
       end
@@ -192,14 +192,14 @@ frame_autoattack:SetScript("OnEvent", function()
     local hitInfo = arg6
 
     if hitInfo then
-      -- print("Got hit event: " .. SpellInfo(spellId))
+      -- print("Got hit event: " .. GetSpellRecField(spellId, "name"))
     end
   elseif event == "SPELL_QUEUE_EVENT" then
     local eventCode = arg1
     local spellId = arg2
 
     if eventCode == 0 or eventCode == 2 or eventCode == 4 then
-      rotationState.queued_attack = SpellInfo(spellId)
+      rotationState.queued_attack = GetSpellRecField(spellId, "name")
     elseif eventCode == 1 or eventCode == 3 or eventCode == 5 then
       rotationState.queued_attack = nil
     end
