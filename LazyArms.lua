@@ -91,6 +91,7 @@ local rotation = {
         and mortalstrike_cd.isOnCooldown == 0
         and rotationState.queued_attack ~= "Whirlwind"
         and not IsCurrentAction(62)
+        and UnitExists("target")
         and distance <= 5
       then
         return true
@@ -135,6 +136,7 @@ local rotation = {
         and whirlwind_cd.isOnCooldown == 0
         and rotationState.queued_attack ~= "Mortal Strike"
         and not IsCurrentAction(62)
+        and UnitExists("target")
         and distance <= 8
       then
         return true
