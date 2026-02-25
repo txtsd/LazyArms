@@ -245,6 +245,27 @@ local function run()
   end
 
   -- ==========
+  -- Berserker Stance
+  -- ==========
+  local auras = GetUnitField("player", "aura")
+  local STANCE_BERSERKER = 2458
+  local STANCE_DEFENSIVE = 71
+  local STANCE_BATTLE = 2457
+  local is_berserker = 0
+
+  for i, spellId in ipairs(auras) do
+    if spellId == STANCE_BERSERKER then
+      is_berserker = 1
+      break
+    end
+  end
+
+  if not is_berserker then
+    CastSpellByName("Berserker Stance")
+    return
+  end
+
+  -- ==========
   -- Battle Shout
   -- ==========
   if not has_buff("Battle Shout") then
