@@ -297,6 +297,19 @@ local function run()
   end
 
   -- ==========
+  -- Execute
+  -- ==========
+  if UnitExists("target") and UnitCanAttack("player", "target") == 1 then
+    local target_hp = GetUnitField("target", "health", 1)
+    local target_maxhp = GetUnitField("target", "maxHealth", 1)
+    if (target_hp / target_maxhp * 100) <= 20 and GetUnitField("player", "power2", 1) >= 15 then
+      -- print("Executing!")
+      CastSpellByName("Execute")
+      return
+    end
+  end
+
+  -- ==========
   -- Sunder Armor
   -- ==========
   if UnitExists("target") and UnitCanAttack("player", "target") == 1 then
@@ -326,19 +339,6 @@ local function run()
   if revenge == 1 and GetUnitField("player", "power2", 1) <= 25 and is_on_cooldown(SPELL_ID_REVENGE) then
     CastSpellByName("Revenge")
     return
-  end
-
-  -- ==========
-  -- Execute
-  -- ==========
-  if UnitExists("target") and UnitCanAttack("player", "target") == 1 then
-    local target_hp = GetUnitField("target", "health", 1)
-    local target_maxhp = GetUnitField("target", "maxHealth", 1)
-    if (target_hp / target_maxhp * 100) <= 20 and GetUnitField("player", "power2", 1) >= 15 then
-      -- print("Executing!")
-      CastSpellByName("Execute")
-      return
-    end
   end
 
   -- ==========
