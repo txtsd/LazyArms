@@ -1,10 +1,15 @@
-local libdebuff = pfUI and pfUI.env and pfUI.env.libdebuff
+-- Lazy lookup: grab libdebuff at call time, not at load time
+-- pfUI may not be fully loaded when this addon initializes
+local function get_libdebuff()
+  return pfUI and pfUI.api and pfUI.api.libdebuff
+end
 
 SetCVar("NP_EnableAutoAttackEvents", "1")
 
 local function get_sunder_stacks()
+  local libdebuff = get_libdebuff()
   if not libdebuff then
-    print("No libdebuff")
+    print("LazyArms: pfUI libdebuff not available")
     return 0
   end
 
