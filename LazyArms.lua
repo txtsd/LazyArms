@@ -6,6 +6,15 @@ end
 
 SetCVar("NP_EnableAutoAttackEvents", "1")
 
+local SPELL_ID_CHARGE = 11578
+local SPELL_ID_INTERCEPT = 20617
+local SPELL_ID_INTERVENE = 45595
+local SPELL_ID_OVERPOWER = 11585
+local SPELL_ID_REVENGE = 11601
+local SPELL_ID_SLAM = 45961
+local SPELL_ID_MORTALSTRIKE = 27580
+local SPELL_ID_WHIRLWIND = 1680
+
 local function get_sunder_stacks()
   local libdebuff = get_libdebuff()
   if not libdebuff then
@@ -27,7 +36,7 @@ local function get_sunder_stacks()
 end
 
 local function in_combat()
-  local flags = GetUnitField("player", "flags")
+  local flags = GetUnitField("player", "flags", 1)
   local UNIT_FLAG_IN_COMBAT = 524288
   return bit.band(flags, UNIT_FLAG_IN_COMBAT) ~= 0
 end
@@ -36,13 +45,25 @@ local function has_buff(buff_name)
   for i = 1, 40 do
     local _, _, buff_id = UnitBuff("player", i)
     if buff_id then
-      local spell_name = GetSpellRecField(buff_id, "name")
+      local spell_name = GetSpellRecField(buff_id, "name", 1)
       if spell_name == buff_name then
         return true
       end
     end
   end
   return false
+end
+
+local function is_on_cooldown(spell_id)
+  local cd_table = GetSpellIdCooldown(spell_id)
+  if cd_table then
+    local spell_is_on_cooldown = cd_table.isOnCooldown
+    if spell_is_on_cooldown and spell_is_on_cooldown == 0 then
+      return true
+    else
+      return false
+    end
+  end
 end
 
 -- Saved variable for persistence
@@ -62,11 +83,10 @@ local rotation = {
     spell = "Slam",
     next = 2,
     condition = function()
-      local slam_cd = GetSpellIdCooldown(45961) -- Slam (Rank 5)
       local distance = UnitXP("distanceBetween", "player", "target")
       if
-        GetUnitField("player", "power2") >= 15
-        and slam_cd.isOnCooldown == 0
+        GetUnitField("player", "power2", 1) >= 15
+        and is_on_cooldown(SPELL_ID_SLAM)
         and rotationState.queued_attack ~= "Mortal Strike"
         and rotationState.queued_attack ~= "Whirlwind"
         and UnitExists("target")
@@ -90,11 +110,10 @@ local rotation = {
     spell = "Mortal Strike",
     next = 4,
     condition = function()
-      local mortalstrike_cd = GetSpellIdCooldown(27580) -- Mortal Strike (Rank 4)
       local distance = UnitXP("distanceBetween", "player", "target")
       if
-        GetUnitField("player", "power2") >= 30
-        and mortalstrike_cd.isOnCooldown == 0
+        GetUnitField("player", "power2", 1) >= 30
+        and is_on_cooldown(SPELL_ID_MORTALSTRIKE)
         and rotationState.queued_attack ~= "Whirlwind"
         and not IsCurrentAction(62)
         and UnitExists("target")
@@ -109,11 +128,10 @@ local rotation = {
     spell = "Slam",
     next = 5,
     condition = function()
-      local slam_cd = GetSpellIdCooldown(45961) -- Slam (Rank 5)
       local distance = UnitXP("distanceBetween", "player", "target")
       if
-        GetUnitField("player", "power2") >= 15
-        and slam_cd.isOnCooldown == 0
+        GetUnitField("player", "power2", 1) >= 15
+        and is_on_cooldown(SPELL_ID_SLAM)
         and rotationState.queued_attack ~= "Mortal Strike"
         and rotationState.queued_attack ~= "Whirlwind"
         and UnitExists("target")
@@ -136,11 +154,10 @@ local rotation = {
     spell = "Whirlwind",
     next = 7,
     condition = function()
-      whirlwind_cd = GetSpellIdCooldown(1680) -- Whirlwind
       local distance = UnitXP("distanceBetween", "player", "target")
       if
-        GetUnitField("player", "power2") >= 25
-        and whirlwind_cd.isOnCooldown == 0
+        GetUnitField("player", "power2", 1) >= 25
+        and is_on_cooldown(SPELL_ID_WHIRLWIND)
         and rotationState.queued_attack ~= "Mortal Strike"
         and not IsCurrentAction(62)
         and UnitExists("target")
@@ -155,11 +172,10 @@ local rotation = {
     spell = "Slam",
     next = 8,
     condition = function()
-      local slam_cd = GetSpellIdCooldown(45961) -- Slam (Rank 5)
       local distance = UnitXP("distanceBetween", "player", "target")
       if
-        GetUnitField("player", "power2") >= 15
-        and slam_cd.isOnCooldown == 0
+        GetUnitField("player", "power2", 1) >= 15
+        and is_on_cooldown(SPELL_ID_SLAM)
         and rotationState.queued_attack ~= "Mortal Strike"
         and rotationState.queued_attack ~= "Whirlwind"
         and UnitExists("target")
@@ -200,14 +216,14 @@ frame_autoattack:SetScript("OnEvent", function()
     local hitInfo = arg6
 
     if hitInfo then
-      -- print("Got hit event: " .. GetSpellRecField(spellId, "name"))
+      -- print("Got hit event: " .. GetSpellRecField(spellId, "name", 1))
     end
   elseif event == "SPELL_QUEUE_EVENT" then
     local eventCode = arg1
     local spellId = arg2
 
     if eventCode == 0 or eventCode == 2 or eventCode == 4 then
-      rotationState.queued_attack = GetSpellRecField(spellId, "name")
+      rotationState.queued_attack = GetSpellRecField(spellId, "name", 1)
     elseif eventCode == 1 or eventCode == 3 or eventCode == 5 then
       rotationState.queued_attack = nil
     end
@@ -226,26 +242,24 @@ local function run()
   end
   if auto_attack == 1 then
     CastSpellByName("Attack")
+    return
   end
 
   -- ==========
   -- Charge & Intercept
   -- ==========
   if UnitExists("target") and UnitCanAttack("player", "target") == 1 then
-    local charge = GetSpellIdCooldown(11578) -- Charge (Rank 3)
-    local intercept = GetSpellIdCooldown(20617) -- Intercept (Rank 3)
-    -- local intervene = GetSpellIdCooldown(45595) -- Intervene (Rank 1)
     local distance = UnitXP("distanceBetween", "player", "target")
     if distance >= 8 and distance <= 25 then
-      if not in_combat() and charge.isOnCooldown == 0 then
+      if not in_combat() and is_on_cooldown(SPELL_ID_CHARGE) then
         -- print("Charging!")
         CastSpellByName("Charge")
         return
-      elseif in_combat() and intercept.isOnCooldown == 0 and GetUnitField("player", "power2") >= 10 then
+      elseif is_on_cooldown(SPELL_ID_INTERCEPT) and GetUnitField("player", "power2", 1) >= 10 then
         -- print("Intercepting!")
         CastSpellByName("Intercept")
         return
-        -- elseif in_combat() and intervene.isOnCooldown == 0 then
+        -- elseif is_on_cooldown(SPELL_ID_INTERVENE) then
         --   -- print("Intervening!")
         --   CastSpellByName("Intervene")
       end
@@ -255,7 +269,7 @@ local function run()
   -- ==========
   -- Berserker Stance
   -- ==========
-  local auras = GetUnitField("player", "aura")
+  local auras = GetUnitField("player", "aura", 1)
   local STANCE_BERSERKER = 2458
   local STANCE_DEFENSIVE = 71
   local STANCE_BATTLE = 2457
@@ -290,7 +304,7 @@ local function run()
     if distance <= 5 then
       local sunder_stacks, sunder_timeleft = get_sunder_stacks()
       if sunder_stacks < 5 or sunder_timeleft < 5 then
-        if GetUnitField("player", "power2") >= 10 and UnitExists("target") then
+        if GetUnitField("player", "power2", 1) >= 10 and UnitExists("target") then
           -- print("Sundering!")
           CastSpellByName("Sunder Armor")
           return
@@ -303,15 +317,13 @@ local function run()
   -- Reactions
   -- ==========
   local overpower = IsSpellUsable("Overpower")
-  local overpower_cd = GetSpellIdCooldown(11585) -- Overpower (Rank 4)
-  if overpower == 1 and GetUnitField("player", "power2") <= 50 and overpower_cd.isOnCooldown == 0 then
+  if overpower == 1 and GetUnitField("player", "power2", 1) <= 25 and is_on_cooldown(SPELL_ID_OVERPOWER) then
     CastSpellByName("Overpower")
     return
   end
 
   local revenge = IsSpellUsable("Revenge")
-  local revenge_cd = GetSpellIdCooldown(11601) -- Revenge (Rank 5)
-  if revenge == 1 and GetUnitField("player", "power2") <= 50 and revenge_cd.isOnCooldown == 0 then
+  if revenge == 1 and GetUnitField("player", "power2", 1) <= 25 and is_on_cooldown(SPELL_ID_REVENGE) then
     CastSpellByName("Revenge")
     return
   end
@@ -320,9 +332,9 @@ local function run()
   -- Execute
   -- ==========
   if UnitExists("target") and UnitCanAttack("player", "target") == 1 then
-    local target_hp = GetUnitField("target", "health")
-    local target_maxhp = GetUnitField("target", "maxHealth")
-    if (target_hp / target_maxhp * 100) <= 20 and GetUnitField("player", "power2") >= 15 then
+    local target_hp = GetUnitField("target", "health", 1)
+    local target_maxhp = GetUnitField("target", "maxHealth", 1)
+    if (target_hp / target_maxhp * 100) <= 20 and GetUnitField("player", "power2", 1) >= 15 then
       -- print("Executing!")
       CastSpellByName("Execute")
       return
