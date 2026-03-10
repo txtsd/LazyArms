@@ -168,14 +168,8 @@ end)
 -- ============================================================================
 local function run()
   -- Auto Attack
-  local auto_attack = 1
-  for i = 1, 172 do
-    if IsCurrentAction(i) then
-      auto_attack = 0
-      break
-    end
-  end
-  if auto_attack == 1 then
+  local _, _, _, _, _, _, autoattack = GetCurrentCastingInfo()
+  if autoattack ~= 1 then
     CastSpellByName("Attack")
     return
   end
@@ -327,14 +321,8 @@ end
 -- ============================================================================
 local function run_aoe()
   -- Auto Attack
-  local auto_attack = 1
-  for i = 1, 172 do
-    if IsCurrentAction(i) then
-      auto_attack = 0
-      break
-    end
-  end
-  if auto_attack == 1 then
+  local _, _, _, _, _, _, autoattack = GetCurrentCastingInfo()
+  if autoattack ~= 1 then
     CastSpellByName("Attack")
     return
   end
