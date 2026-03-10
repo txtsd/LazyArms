@@ -180,15 +180,15 @@ local function pre_rotation(use_sweeping_strikes)
     return true
   end
 
-  -- Charge & Intercept
+  -- Charge & Intercept (use distance check instead of IsSpellInRange to avoid
+  -- nil returns when in the wrong stance)
   if UnitExists("target") and UnitCanAttack("player", "target") == 1 then
-    if IsSpellInRange("Intercept", "target") == 1 then
-      if is_off_cooldown(SPELL_ID_INTERCEPT) and get_rage() >= 10 then
+    local dist = UnitXP("distanceBetween", "player", "target", "AoE")
+    if dist >= 8 and dist <= 25 then
+      if in_combat() and is_off_cooldown(SPELL_ID_INTERCEPT) and get_rage() >= 10 then
         CastSpellByName("Intercept")
         return true
       end
-    end
-    if IsSpellInRange("Charge", "target") == 1 then
       if not in_combat() and is_off_cooldown(SPELL_ID_CHARGE) then
         CastSpellByName("Charge")
         return true
