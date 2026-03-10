@@ -1,5 +1,5 @@
 -- LazyArms for TurtleWoW
--- Requires pfUI (with libdebuff) and Nampower.
+-- Requires pfUI (with libdebuff), Nampower, and UnitXP_SP3.
 
 -- ============================================================================
 -- 1. Dependency checks (run once at load)
@@ -15,6 +15,12 @@ end
 -- Check Nampower by testing for a unique function it provides
 if not GetCastInfo or type(GetCastInfo) ~= "function" then
   print("LazyArms: Nampower not loaded – addon disabled.")
+  return
+end
+
+-- Check UnitXP_SP3 by testing for UnitXP function
+if not UnitXP or type(UnitXP) ~= "function" then
+  print("LazyArms: UnitXP_SP3 not loaded – addon disabled.")
   return
 end
 
@@ -104,131 +110,14 @@ local function is_on_cooldown(spell_id)
 end
 
 -- ============================================================================
--- 5. Rotation state and definition
+-- 5. Rotation state
 -- ============================================================================
 local rotationState = rotationState
   or {
-    stepIndex = 1,
-    lastAction = nil,
-    nextStepAfter = nil,
-    waitingFor = nil,
     queued_attack_id = nil,
-    waitStartTime = nil,
-    stuckStartTime = nil,
+    lastAutoTime = nil,
+    lastSlamCast = nil,
   }
-
-local rotation = {
-  -- Step 1: Slam
-  {
-    spell = "Slam",
-    next = 2,
-    condition = function()
-      if
-        GetUnitField("player", "power2", 1) >= 15
-        and is_on_cooldown(SPELL_ID_SLAM)
-        and rotationState.queued_attack_id ~= SPELL_ID_MORTALSTRIKE
-        and rotationState.queued_attack_id ~= SPELL_ID_WHIRLWIND
-        and UnitExists("target")
-        and IsSpellInRange("Slam", "target") == 1
-      then
-        return true
-      end
-    end,
-  },
-  -- Step 2: Wait for Auto
-  {
-    waitFor = "auto",
-    next = 3,
-    condition = function()
-      -- Check if auto attack just happened
-      return GetTime() - (rotationState.lastAutoTime or 0) > 0.1
-    end,
-  },
-  -- Step 3: Mortal Strike
-  {
-    spell = "Mortal Strike",
-    next = 4,
-    condition = function()
-      if
-        GetUnitField("player", "power2", 1) >= 30
-        and is_on_cooldown(SPELL_ID_MORTALSTRIKE)
-        and rotationState.queued_attack_id ~= SPELL_ID_WHIRLWIND
-        and (GetCurrentCastingInfo()) ~= SPELL_ID_SLAM
-        and UnitExists("target")
-        and IsSpellInRange("Mortal Strike", "target") == 1
-      then
-        return true
-      end
-    end,
-  },
-  -- Step 4: Slam
-  {
-    spell = "Slam",
-    next = 5,
-    condition = function()
-      if
-        GetUnitField("player", "power2", 1) >= 15
-        and is_on_cooldown(SPELL_ID_SLAM)
-        and rotationState.queued_attack_id ~= SPELL_ID_MORTALSTRIKE
-        and rotationState.queued_attack_id ~= SPELL_ID_WHIRLWIND
-        and UnitExists("target")
-        and IsSpellInRange("Slam", "target") == 1
-      then
-        return true
-      end
-    end,
-  },
-  -- Step 5: Wait for Auto
-  {
-    waitFor = "auto",
-    next = 6,
-    condition = function()
-      return GetTime() - (rotationState.lastAutoTime or 0) > 0.1
-    end,
-  },
-  -- Step 6: Whirlwind
-  {
-    spell = "Whirlwind",
-    next = 7,
-    condition = function()
-      if
-        GetUnitField("player", "power2", 1) >= 25
-        and is_on_cooldown(SPELL_ID_WHIRLWIND)
-        and rotationState.queued_attack_id ~= SPELL_ID_MORTALSTRIKE
-        and (GetCurrentCastingInfo()) ~= SPELL_ID_SLAM
-        and UnitExists("target")
-        and IsSpellInRange("Whirlwind", "target") == 1
-      then
-        return true
-      end
-    end,
-  },
-  -- Step 7: Slam
-  {
-    spell = "Slam",
-    next = 8,
-    condition = function()
-      if
-        GetUnitField("player", "power2", 1) >= 15
-        and is_on_cooldown(SPELL_ID_SLAM)
-        and rotationState.queued_attack_id ~= SPELL_ID_MORTALSTRIKE
-        and rotationState.queued_attack_id ~= SPELL_ID_WHIRLWIND
-        and UnitExists("target")
-        and IsSpellInRange("Slam", "target") == 1
-      then
-        return true
-      end
-    end,
-  },
-  -- Step 8: Wait for Auto
-  {
-    waitFor = "auto",
-    next = 3, -- Loop back to Mortal Strike
-    condition = function()
-      return GetTime() - (rotationState.lastAutoTime or 0) > 0.1
-    end,
-  },
-}
 
 -- ============================================================================
 -- 6. Event handling (auto attack, spell queue, etc.)
@@ -289,10 +178,9 @@ local function run()
     return
   end
 
-  -- Reset state machine if no target or out of combat
+  -- Reset rotation state if no target or out of combat
   if not UnitExists("target") or not in_combat() then
-    rotationState.stepIndex = 1
-    rotationState.waitStartTime = nil -- Clear wait tracking
+    rotationState.lastSlamCast = nil
     -- Don't return here; Still allow pre‑combat actions like Charge
   end
 
@@ -384,47 +272,51 @@ local function run()
     return
   end
 
-  -- Rotation steps
-  local currentStep = rotation[rotationState.stepIndex]
-  if not currentStep then
-    rotationState.stepIndex = 1
+  -- Rotation (priority-based: MS > WW > Slam)
+  local castId = GetCurrentCastingInfo()
+  local isCastingSlam = castId == SPELL_ID_SLAM
+
+  -- Mortal Strike (instant, highest priority)
+  if
+    not isCastingSlam
+    and GetUnitField("player", "power2", 1) >= 30
+    and is_on_cooldown(SPELL_ID_MORTALSTRIKE)
+    and rotationState.queued_attack_id ~= SPELL_ID_WHIRLWIND
+    and UnitExists("target")
+    and IsSpellInRange("Mortal Strike", "target") == 1
+  then
+    CastSpellByName("Mortal Strike")
     return
   end
 
-  -- For wait steps: only advance if an auto attack happened while waiting
-  if currentStep.waitFor then
-    -- First time entering this wait step? record when we started waiting
-    if not rotationState.waitStartTime then
-      rotationState.waitStartTime = GetTime()
-    end
-
-    -- Did we get an auto attack after we started waiting?
-    local autoHappened = rotationState.lastAutoTime and rotationState.lastAutoTime > rotationState.waitStartTime
-    if autoHappened then
-      rotationState.waitStartTime = nil -- clear for next wait
-      rotationState.stepIndex = currentStep.next
-    end
-    return -- stay on this step until auto happens
+  -- Whirlwind (instant, second priority)
+  if
+    not isCastingSlam
+    and GetUnitField("player", "power2", 1) >= 25
+    and is_on_cooldown(SPELL_ID_WHIRLWIND)
+    and rotationState.queued_attack_id ~= SPELL_ID_MORTALSTRIKE
+    and UnitExists("target")
+    and UnitXP("distanceBetween", "player", "target", "AoE") <= 8
+  then
+    CastSpellByName("Whirlwind")
+    return
   end
 
-  -- Normal spell step: check condition and cast if true
-  if currentStep.condition() then
-    rotationState.waitStartTime = nil -- ensure wait tracking is cleared
-    if currentStep.spell then
-      CastSpellByName(currentStep.spell)
-      rotationState.lastCast = currentStep.spell
-    end
-    rotationState.stepIndex = currentStep.next
-  else
-    -- Condition not met. If we've been stuck here too long (e.g., 2 seconds), reset to step 1.
-    if rotationState.stuckStartTime then
-      if GetTime() - rotationState.stuckStartTime > 2.0 then
-        rotationState.stepIndex = 1
-        rotationState.stuckStartTime = nil
-      end
-    else
-      rotationState.stuckStartTime = GetTime()
-    end
+  -- Slam (filler, gated on auto-attack to avoid delaying swings)
+  local autoSinceSlam = rotationState.lastAutoTime
+    and (not rotationState.lastSlamCast or rotationState.lastAutoTime > rotationState.lastSlamCast)
+  if
+    autoSinceSlam
+    and GetUnitField("player", "power2", 1) >= 15
+    and is_on_cooldown(SPELL_ID_SLAM)
+    and rotationState.queued_attack_id ~= SPELL_ID_MORTALSTRIKE
+    and rotationState.queued_attack_id ~= SPELL_ID_WHIRLWIND
+    and UnitExists("target")
+    and IsSpellInRange("Slam", "target") == 1
+  then
+    CastSpellByName("Slam")
+    rotationState.lastSlamCast = GetTime()
+    return
   end
 end
 
