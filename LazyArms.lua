@@ -317,8 +317,10 @@ local function run()
     if distance <= 5 then
       local sunder_stacks, sunder_timeleft = get_sunder_stacks()
       if sunder_stacks < 5 or sunder_timeleft < 5 then
-        if GetUnitField("player", "power2", 1) >= 10 and UnitExists("target") then
-          -- print("Sundering!")
+        -- Get target's current armor value
+        local resistances = GetUnitField("target", "resistances")
+        local armor = resistances and resistances[1] or 0
+        if armor > 0 and GetUnitField("player", "power2", 1) >= 10 then
           CastSpellByName("Sunder Armor")
           return
         end
