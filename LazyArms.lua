@@ -153,7 +153,7 @@ local rotation = {
         GetUnitField("player", "power2", 1) >= 30
         and is_on_cooldown(SPELL_ID_MORTALSTRIKE)
         and rotationState.queued_attack_id ~= SPELL_ID_WHIRLWIND
-        and not IsCurrentAction(62)
+        and (GetCurrentCastingInfo()) ~= SPELL_ID_SLAM
         and UnitExists("target")
         and IsSpellInRange("Mortal Strike", "target") == 1
       then
@@ -195,7 +195,7 @@ local rotation = {
         GetUnitField("player", "power2", 1) >= 25
         and is_on_cooldown(SPELL_ID_WHIRLWIND)
         and rotationState.queued_attack_id ~= SPELL_ID_MORTALSTRIKE
-        and not IsCurrentAction(62)
+        and (GetCurrentCastingInfo()) ~= SPELL_ID_SLAM
         and UnitExists("target")
         and IsSpellInRange("Whirlwind", "target") == 1
       then
