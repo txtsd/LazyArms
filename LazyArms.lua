@@ -41,6 +41,8 @@ local SPELL_ID_SLAM = 45961
 local SPELL_ID_MORTALSTRIKE = 27580
 local SPELL_ID_WHIRLWIND = 1680
 local SPELL_ID_BATTLE_SHOUT = 11551
+local SPELL_ID_CLEAVE = 20569
+local SPELL_ID_SWEEPING_STRIKES = 12292
 
 local STANCE_BERSERKER = 2458
 local STANCE_DEFENSIVE = 71
@@ -321,7 +323,138 @@ local function run()
 end
 
 -- ============================================================================
--- 8. Slash command registration
+-- 8. AoE rotation runner
+-- ============================================================================
+local function run_aoe()
+  -- Auto Attack
+  local auto_attack = 1
+  for i = 1, 172 do
+    if IsCurrentAction(i) then
+      auto_attack = 0
+      break
+    end
+  end
+  if auto_attack == 1 then
+    CastSpellByName("Attack")
+    return
+  end
+
+  -- Charge & Intercept
+  if UnitExists("target") and UnitCanAttack("player", "target") == 1 then
+    if IsSpellInRange("Intercept", "target") == 1 then
+      if is_on_cooldown(SPELL_ID_INTERCEPT) and GetUnitField("player", "power2", 1) >= 10 then
+        CastSpellByName("Intercept")
+        return
+      end
+    end
+    if IsSpellInRange("Charge", "target") == 1 then
+      if not in_combat() and is_on_cooldown(SPELL_ID_CHARGE) then
+        CastSpellByName("Charge")
+        return
+      end
+    end
+  end
+
+  -- Sweeping Strikes (before stance check so we don't loop)
+  if
+    in_combat()
+    and is_on_cooldown(SPELL_ID_SWEEPING_STRIKES)
+    and UnitExists("target")
+  then
+    CastSpellByName("Sweeping Strikes")
+    return
+  end
+
+  -- Berserker Stance
+  local auras = GetUnitField("player", "aura", 1)
+  local is_berserker = 0
+  if auras then
+    for i = 1, 32 do
+      if auras[i] == STANCE_BERSERKER then
+        is_berserker = 1
+        break
+      end
+    end
+  end
+  if is_berserker == 0 then
+    CastSpellByName("Berserker Stance")
+    return
+  end
+
+  -- Battle Shout
+  if not has_buff(SPELL_ID_BATTLE_SHOUT) then
+    CastSpellByName("Battle Shout")
+    return
+  end
+
+  -- Keep Cleave queued (on-swing, no GCD conflict)
+  if
+    GetUnitField("player", "power2", 1) >= 20
+    and rotationState.queued_attack_id ~= SPELL_ID_CLEAVE
+    and UnitExists("target")
+  then
+    CastSpellByName("Cleave")
+    return
+  end
+
+  -- Whirlwind (top GCD priority)
+  if
+    GetUnitField("player", "power2", 1) >= 25
+    and is_on_cooldown(SPELL_ID_WHIRLWIND)
+    and UnitExists("target")
+    and UnitXP("distanceBetween", "player", "target", "AoE") <= 8
+  then
+    CastSpellByName("Whirlwind")
+    return
+  end
+
+  -- Sunder Armor (once per target, tab after this lands)
+  if UnitExists("target") and UnitCanAttack("player", "target") == 1 then
+    if IsSpellInRange("Sunder Armor", "target") == 1 then
+      local sunder_stacks = get_sunder_stacks()
+      if sunder_stacks < 1 then
+        local resistances = GetUnitField("target", "resistances")
+        local armor = resistances and resistances[1] or 0
+        if armor > 0 and GetUnitField("player", "power2", 1) >= 10 then
+          CastSpellByName("Sunder Armor")
+          return
+        end
+      end
+    end
+  end
+
+  -- Mortal Strike (fill GCDs)
+  if
+    GetUnitField("player", "power2", 1) >= 30
+    and is_on_cooldown(SPELL_ID_MORTALSTRIKE)
+    and UnitExists("target")
+    and IsSpellInRange("Mortal Strike", "target") == 1
+  then
+    CastSpellByName("Mortal Strike")
+    return
+  end
+
+  -- Execute (low priority, only as last GCD)
+  if UnitExists("target") and UnitCanAttack("player", "target") == 1 then
+    local target_hp = GetUnitField("target", "health", 1)
+    local target_maxhp = GetUnitField("target", "maxHealth", 1)
+    if
+      target_hp
+      and target_maxhp
+      and (target_hp / target_maxhp * 100) <= 20
+      and GetUnitField("player", "power2", 1) >= 15
+    then
+      CastSpellByName("Execute")
+      return
+    end
+  end
+end
+
+-- ============================================================================
+-- 9. Slash command registration
 -- ============================================================================
 SlashCmdList["LAZYARMS_SLASH"] = run
 SLASH_LAZYARMS_SLASH1 = "/lazyarms"
+
+SlashCmdList["LAZYARMS_AOE_SLASH"] = run_aoe
+SLASH_LAZYARMS_AOE_SLASH1 = "/lazyarmsaoe"
