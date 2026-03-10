@@ -289,15 +289,17 @@ local function run()
 
   -- Charge & Intercept
   if UnitExists("target") and UnitCanAttack("player", "target") == 1 then
-    if IsSpellInRange("Charge", "target") == 1 then
-      if not in_combat() and is_on_cooldown(SPELL_ID_CHARGE) then
-        CastSpellByName("Charge")
-        return
-      end
-    end
+    -- Check Intercept first: if in range, off cooldown, and have enough rage
     if IsSpellInRange("Intercept", "target") == 1 then
       if is_on_cooldown(SPELL_ID_INTERCEPT) and GetUnitField("player", "power2", 1) >= 10 then
         CastSpellByName("Intercept")
+        return
+      end
+    end
+    -- If Intercept not available, try Charge (only out of combat)
+    if IsSpellInRange("Charge", "target") == 1 then
+      if not in_combat() and is_on_cooldown(SPELL_ID_CHARGE) then
+        CastSpellByName("Charge")
         return
       end
     end
