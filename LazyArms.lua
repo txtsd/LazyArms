@@ -14,6 +14,7 @@ local SPELL_ID_REVENGE = 11601
 local SPELL_ID_SLAM = 45961
 local SPELL_ID_MORTALSTRIKE = 27580
 local SPELL_ID_WHIRLWIND = 1680
+local SPELL_ID_BATTLE_SHOUT = 11551
 
 local function get_sunder_stacks()
   local libdebuff = get_libdebuff()
@@ -41,14 +42,16 @@ local function in_combat()
   return bit.band(flags, UNIT_FLAG_IN_COMBAT) ~= 0
 end
 
-local function has_buff(buff_name)
-  for i = 1, 40 do
-    local _, _, buff_id = UnitBuff("player", i)
-    if buff_id then
-      local spell_name = GetSpellRecField(buff_id, "name", 1)
-      if spell_name == buff_name then
-        return true
-      end
+local function has_buff(spellId)
+  -- Retrieve the aura table for the player; indices 1‑48 correspond to slots 0‑47
+  local auras = GetUnitField("player", "aura", 1)
+  if not auras then
+    return false
+  end
+
+  for i = 1, 48 do
+    if auras[i] == spellId then
+      return true
     end
   end
   return false
@@ -288,8 +291,7 @@ local function run()
   -- ==========
   -- Battle Shout
   -- ==========
-  if not has_buff("Battle Shout") then
-    -- print("Battle Shouting!")
+  if not has_buff(SPELL_ID_BATTLE_SHOUT) then
     CastSpellByName("Battle Shout")
     return
   end
