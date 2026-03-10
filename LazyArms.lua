@@ -83,14 +83,13 @@ local rotation = {
     spell = "Slam",
     next = 2,
     condition = function()
-      local distance = UnitXP("distanceBetween", "player", "target")
       if
         GetUnitField("player", "power2", 1) >= 15
         and is_on_cooldown(SPELL_ID_SLAM)
         and rotationState.queued_attack ~= "Mortal Strike"
         and rotationState.queued_attack ~= "Whirlwind"
         and UnitExists("target")
-        and distance <= 5
+        and IsSpellInRange("Slam", "target") == 1
       then
         return true
       end
@@ -110,14 +109,13 @@ local rotation = {
     spell = "Mortal Strike",
     next = 4,
     condition = function()
-      local distance = UnitXP("distanceBetween", "player", "target")
       if
         GetUnitField("player", "power2", 1) >= 30
         and is_on_cooldown(SPELL_ID_MORTALSTRIKE)
         and rotationState.queued_attack ~= "Whirlwind"
         and not IsCurrentAction(62)
         and UnitExists("target")
-        and distance <= 5
+        and IsSpellInRange("Mortal Strike", "target") == 1
       then
         return true
       end
@@ -128,14 +126,13 @@ local rotation = {
     spell = "Slam",
     next = 5,
     condition = function()
-      local distance = UnitXP("distanceBetween", "player", "target")
       if
         GetUnitField("player", "power2", 1) >= 15
         and is_on_cooldown(SPELL_ID_SLAM)
         and rotationState.queued_attack ~= "Mortal Strike"
         and rotationState.queued_attack ~= "Whirlwind"
         and UnitExists("target")
-        and distance <= 5
+        and IsSpellInRange("Slam", "target") == 1
       then
         return true
       end
@@ -154,14 +151,13 @@ local rotation = {
     spell = "Whirlwind",
     next = 7,
     condition = function()
-      local distance = UnitXP("distanceBetween", "player", "target")
       if
         GetUnitField("player", "power2", 1) >= 25
         and is_on_cooldown(SPELL_ID_WHIRLWIND)
         and rotationState.queued_attack ~= "Mortal Strike"
         and not IsCurrentAction(62)
         and UnitExists("target")
-        and distance <= 8
+        and IsSpellInRange("Whirlwind", "target") == 1
       then
         return true
       end
@@ -172,14 +168,13 @@ local rotation = {
     spell = "Slam",
     next = 8,
     condition = function()
-      local distance = UnitXP("distanceBetween", "player", "target")
       if
         GetUnitField("player", "power2", 1) >= 15
         and is_on_cooldown(SPELL_ID_SLAM)
         and rotationState.queued_attack ~= "Mortal Strike"
         and rotationState.queued_attack ~= "Whirlwind"
         and UnitExists("target")
-        and distance <= 5
+        and IsSpellInRange("Slam", "target") == 1
       then
         return true
       end
@@ -249,19 +244,16 @@ local function run()
   -- Charge & Intercept
   -- ==========
   if UnitExists("target") and UnitCanAttack("player", "target") == 1 then
-    local distance = UnitXP("distanceBetween", "player", "target")
-    if distance >= 8 and distance <= 25 then
+    if IsSpellInRange("Charge", "target") == 1 then
       if not in_combat() and is_on_cooldown(SPELL_ID_CHARGE) then
-        -- print("Charging!")
         CastSpellByName("Charge")
         return
-      elseif is_on_cooldown(SPELL_ID_INTERCEPT) and GetUnitField("player", "power2", 1) >= 10 then
-        -- print("Intercepting!")
+      end
+    end
+    if IsSpellInRange("Intercept", "target") == 1 then
+      if is_on_cooldown(SPELL_ID_INTERCEPT) and GetUnitField("player", "power2", 1) >= 10 then
         CastSpellByName("Intercept")
         return
-        -- elseif is_on_cooldown(SPELL_ID_INTERVENE) then
-        --   -- print("Intervening!")
-        --   CastSpellByName("Intervene")
       end
     end
   end
@@ -313,8 +305,7 @@ local function run()
   -- Sunder Armor
   -- ==========
   if UnitExists("target") and UnitCanAttack("player", "target") == 1 then
-    local distance = UnitXP("distanceBetween", "player", "target")
-    if distance <= 5 then
+    if IsSpellInRange("Sunder Armor", "target") == 1 then
       local sunder_stacks, sunder_timeleft = get_sunder_stacks()
       if sunder_stacks < 5 or sunder_timeleft < 5 then
         -- Get target's current armor value
