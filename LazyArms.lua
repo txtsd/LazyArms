@@ -1,11 +1,31 @@
--- Lazy lookup: grab libdebuff at call time, not at load time
--- pfUI may not be fully loaded when this addon initializes
-local function get_libdebuff()
-  return pfUI and pfUI.api and pfUI.api.libdebuff
+-- LazyArms for TurtleWoW
+-- Requires pfUI (with libdebuff) and Nampower.
+
+-- ============================================================================
+-- 1. Dependency checks (run once at load)
+-- ============================================================================
+
+-- Check pfUI and its libdebuff
+local libdebuff = pfUI and pfUI.api and pfUI.api.libdebuff
+if not libdebuff then
+  print("LazyArms: pfUI or its libdebuff not found – addon disabled.")
+  return
 end
 
+-- Check Nampower by testing for a unique function it provides
+if not GetCastInfo or type(GetCastInfo) ~= "function" then
+  print("LazyArms: Nampower not loaded – addon disabled.")
+  return
+end
+
+-- ============================================================================
+-- 2. Nampower configuration (safe because Nampower is present)
+-- ============================================================================
 SetCVar("NP_EnableAutoAttackEvents", "1")
 
+-- ============================================================================
+-- 3. Spell ID constants (unchanged)
+-- ============================================================================
 local SPELL_ID_CHARGE = 11578
 local SPELL_ID_INTERCEPT = 20617
 local SPELL_ID_INTERVENE = 45595
@@ -16,13 +36,14 @@ local SPELL_ID_MORTALSTRIKE = 27580
 local SPELL_ID_WHIRLWIND = 1680
 local SPELL_ID_BATTLE_SHOUT = 11551
 
-local function get_sunder_stacks()
-  local libdebuff = get_libdebuff()
-  if not libdebuff then
-    print("LazyArms: pfUI libdebuff not available")
-    return 0
-  end
+local STANCE_BERSERKER = 2458
+local STANCE_DEFENSIVE = 71
+local STANCE_BATTLE = 2457
 
+-- ============================================================================
+-- 4. Helper functions (using stored libdebuff and Nampower)
+-- ============================================================================
+local function get_sunder_stacks()
   if not UnitExists("target") then
     return 0
   end
@@ -77,15 +98,14 @@ local function is_on_cooldown(spell_id)
   local cd_table = GetSpellIdCooldown(spell_id)
   if cd_table then
     local spell_is_on_cooldown = cd_table.isOnCooldown
-    if spell_is_on_cooldown and spell_is_on_cooldown == 0 then
-      return true
-    else
-      return false
-    end
+    return spell_is_on_cooldown == 0
   end
+  return false
 end
 
--- Saved variable for persistence
+-- ============================================================================
+-- 5. Rotation state and definition
+-- ============================================================================
 local rotationState = rotationState
   or {
     stepIndex = 1,
@@ -95,7 +115,6 @@ local rotationState = rotationState
     queued_attack_id = nil,
   }
 
--- Define the rotation as a state machine
 local rotation = {
   -- Step 1: Slam
   {
@@ -105,7 +124,6 @@ local rotation = {
       if
         GetUnitField("player", "power2", 1) >= 15
         and is_on_cooldown(SPELL_ID_SLAM)
-        -- Check if a higher-priority spell is already queued (by ID)
         and rotationState.queued_attack_id ~= SPELL_ID_MORTALSTRIKE
         and rotationState.queued_attack_id ~= SPELL_ID_WHIRLWIND
         and UnitExists("target")
@@ -210,7 +228,9 @@ local rotation = {
   },
 }
 
--- Track when auto attacks happen
+-- ============================================================================
+-- 6. Event handling (auto attack, spell queue, etc.)
+-- ============================================================================
 local frame_autoattack = CreateFrame("Frame", "LazyArmsAutoAttack")
 frame_autoattack:RegisterEvent("AUTO_ATTACK_SELF")
 frame_autoattack:RegisterEvent("SPELL_DAMAGE_EVENT_SELF")
@@ -250,14 +270,16 @@ frame_autoattack:SetScript("OnEvent", function()
   end
 end)
 
+-- ============================================================================
+-- 7. Rotation runner
+-- ============================================================================
 local function run()
-  -- ==========
   -- Auto Attack
-  -- ==========
   local auto_attack = 1
   for i = 1, 172 do
     if IsCurrentAction(i) then
       auto_attack = 0
+      break
     end
   end
   if auto_attack == 1 then
@@ -265,9 +287,7 @@ local function run()
     return
   end
 
-  -- ==========
   -- Charge & Intercept
-  -- ==========
   if UnitExists("target") and UnitCanAttack("player", "target") == 1 then
     if IsSpellInRange("Charge", "target") == 1 then
       if not in_combat() and is_on_cooldown(SPELL_ID_CHARGE) then
@@ -283,56 +303,48 @@ local function run()
     end
   end
 
-  -- ==========
   -- Berserker Stance
-  -- ==========
   local auras = GetUnitField("player", "aura", 1)
-  local STANCE_BERSERKER = 2458
-  local STANCE_DEFENSIVE = 71
-  local STANCE_BATTLE = 2457
   local is_berserker = 0
-
-  for i, spellId in ipairs(auras) do
-    if spellId == STANCE_BERSERKER then
-      is_berserker = 1
-      break
+  if auras then
+    for i = 1, 32 do
+      if auras[i] == STANCE_BERSERKER then
+        is_berserker = 1
+        break
+      end
     end
   end
-
-  if not is_berserker then
+  if is_berserker == 0 then
     CastSpellByName("Berserker Stance")
     return
   end
 
-  -- ==========
   -- Battle Shout
-  -- ==========
   if not has_buff(SPELL_ID_BATTLE_SHOUT) then
     CastSpellByName("Battle Shout")
     return
   end
 
-  -- ==========
   -- Execute
-  -- ==========
   if UnitExists("target") and UnitCanAttack("player", "target") == 1 then
     local target_hp = GetUnitField("target", "health", 1)
     local target_maxhp = GetUnitField("target", "maxHealth", 1)
-    if (target_hp / target_maxhp * 100) <= 20 and GetUnitField("player", "power2", 1) >= 15 then
-      -- print("Executing!")
+    if
+      target_hp
+      and target_maxhp
+      and (target_hp / target_maxhp * 100) <= 20
+      and GetUnitField("player", "power2", 1) >= 15
+    then
       CastSpellByName("Execute")
       return
     end
   end
 
-  -- ==========
   -- Sunder Armor
-  -- ==========
   if UnitExists("target") and UnitCanAttack("player", "target") == 1 then
     if IsSpellInRange("Sunder Armor", "target") == 1 then
       local sunder_stacks, sunder_timeleft = get_sunder_stacks()
       if sunder_stacks < 5 or sunder_timeleft < 5 then
-        -- Get target's current armor value
         local resistances = GetUnitField("target", "resistances")
         local armor = resistances and resistances[1] or 0
         if armor > 0 and GetUnitField("player", "power2", 1) >= 10 then
@@ -343,44 +355,42 @@ local function run()
     end
   end
 
-  -- ==========
   -- Reactions
-  -- ==========
-  local overpower = IsSpellUsable("Overpower")
-  if overpower == 1 and GetUnitField("player", "power2", 1) <= 25 and is_on_cooldown(SPELL_ID_OVERPOWER) then
+  if
+    IsSpellUsable("Overpower") == 1
+    and GetUnitField("player", "power2", 1) <= 25
+    and is_on_cooldown(SPELL_ID_OVERPOWER)
+  then
     CastSpellByName("Overpower")
     return
   end
-
-  local revenge = IsSpellUsable("Revenge")
-  if revenge == 1 and GetUnitField("player", "power2", 1) <= 25 and is_on_cooldown(SPELL_ID_REVENGE) then
+  if
+    IsSpellUsable("Revenge") == 1
+    and GetUnitField("player", "power2", 1) <= 25
+    and is_on_cooldown(SPELL_ID_REVENGE)
+  then
     CastSpellByName("Revenge")
     return
   end
 
-  -- ==========
-  -- Rest of the rotation
-  -- ==========
-
+  -- Rotation steps
   local currentStep = rotation[rotationState.stepIndex]
   if not currentStep then
     rotationState.stepIndex = 1
     return
   end
 
-  -- Check if conditions are met
   if currentStep.condition() then
-    -- Cast spell if this step has one
     if currentStep.spell then
-      -- print("Casting: " .. currentStep.spell)
       CastSpellByName(currentStep.spell)
       rotationState.lastCast = currentStep.spell
     end
-
-    -- Move to next step
     rotationState.stepIndex = currentStep.next
   end
 end
 
+-- ============================================================================
+-- 8. Slash command registration
+-- ============================================================================
 SlashCmdList["LAZYARMS_SLASH"] = run
 SLASH_LAZYARMS_SLASH1 = "/lazyarms"
