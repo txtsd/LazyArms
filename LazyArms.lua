@@ -36,10 +36,26 @@ local function get_sunder_stacks()
   return 0
 end
 
+-- Combat flag caching using Nampower's UNIT_FLAGS_GUID event
+local inCombat = false
+local combatFrame = CreateFrame("Frame", "LazyArmsCombatTracker")
+combatFrame:RegisterEvent("UNIT_FLAGS_GUID")
+combatFrame:SetScript("OnEvent", function()
+  -- arg1: guid, arg2: isPlayer, arg3: isTarget, arg4: isMouseover, arg5: isPet, arg6: partyIndex, arg7: raidIndex
+  if arg2 == 1 then -- only care about player
+    local flags = GetUnitField("player", "flags", 1)
+    local UNIT_FLAG_IN_COMBAT = 524288
+    inCombat = flags and (bit.band(flags, UNIT_FLAG_IN_COMBAT) ~= 0) or false
+  end
+end)
+
+-- Initialize combat flag
+local flags = GetUnitField("player", "flags", 1)
+inCombat = flags and (bit.band(flags, 524288) ~= 0) or false
+
+-- Replace existing in_combat() with cached value
 local function in_combat()
-  local flags = GetUnitField("player", "flags", 1)
-  local UNIT_FLAG_IN_COMBAT = 524288
-  return bit.band(flags, UNIT_FLAG_IN_COMBAT) ~= 0
+  return inCombat
 end
 
 local function has_buff(spellId)
