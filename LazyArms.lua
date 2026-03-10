@@ -113,6 +113,8 @@ local rotationState = rotationState
     nextStepAfter = nil,
     waitingFor = nil,
     queued_attack_id = nil,
+    waitStartTime = nil,
+    stuckStartTime = nil,
   }
 
 local rotation = {
@@ -287,6 +289,13 @@ local function run()
     return
   end
 
+  -- Reset state machine if no target or out of combat
+  if not UnitExists("target") or not in_combat() then
+    rotationState.stepIndex = 1
+    rotationState.waitStartTime = nil -- Clear wait tracking
+    -- Don't return here; Still allow pre‑combat actions like Charge
+  end
+
   -- Charge & Intercept
   if UnitExists("target") and UnitCanAttack("player", "target") == 1 then
     -- Check Intercept first: if in range, off cooldown, and have enough rage
@@ -382,12 +391,40 @@ local function run()
     return
   end
 
+  -- For wait steps: only advance if an auto attack happened while waiting
+  if currentStep.waitFor then
+    -- First time entering this wait step? record when we started waiting
+    if not rotationState.waitStartTime then
+      rotationState.waitStartTime = GetTime()
+    end
+
+    -- Did we get an auto attack after we started waiting?
+    local autoHappened = rotationState.lastAutoTime and rotationState.lastAutoTime > rotationState.waitStartTime
+    if autoHappened then
+      rotationState.waitStartTime = nil -- clear for next wait
+      rotationState.stepIndex = currentStep.next
+    end
+    return -- stay on this step until auto happens
+  end
+
+  -- Normal spell step: check condition and cast if true
   if currentStep.condition() then
+    rotationState.waitStartTime = nil -- ensure wait tracking is cleared
     if currentStep.spell then
       CastSpellByName(currentStep.spell)
       rotationState.lastCast = currentStep.spell
     end
     rotationState.stepIndex = currentStep.next
+  else
+    -- Condition not met. If we've been stuck here too long (e.g., 2 seconds), reset to step 1.
+    if rotationState.stuckStartTime then
+      if GetTime() - rotationState.stuckStartTime > 2.0 then
+        rotationState.stepIndex = 1
+        rotationState.stuckStartTime = nil
+      end
+    else
+      rotationState.stuckStartTime = GetTime()
+    end
   end
 end
 
