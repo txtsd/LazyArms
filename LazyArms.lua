@@ -73,7 +73,7 @@ local rotationState = rotationState
     lastAction = nil,
     nextStepAfter = nil,
     waitingFor = nil,
-    queued_attack = nil,
+    queued_attack_id = nil,
   }
 
 -- Define the rotation as a state machine
@@ -86,8 +86,9 @@ local rotation = {
       if
         GetUnitField("player", "power2", 1) >= 15
         and is_on_cooldown(SPELL_ID_SLAM)
-        and rotationState.queued_attack ~= "Mortal Strike"
-        and rotationState.queued_attack ~= "Whirlwind"
+        -- Check if a higher-priority spell is already queued (by ID)
+        and rotationState.queued_attack_id ~= SPELL_ID_MORTALSTRIKE
+        and rotationState.queued_attack_id ~= SPELL_ID_WHIRLWIND
         and UnitExists("target")
         and IsSpellInRange("Slam", "target") == 1
       then
@@ -112,7 +113,7 @@ local rotation = {
       if
         GetUnitField("player", "power2", 1) >= 30
         and is_on_cooldown(SPELL_ID_MORTALSTRIKE)
-        and rotationState.queued_attack ~= "Whirlwind"
+        and rotationState.queued_attack_id ~= SPELL_ID_WHIRLWIND
         and not IsCurrentAction(62)
         and UnitExists("target")
         and IsSpellInRange("Mortal Strike", "target") == 1
@@ -129,8 +130,8 @@ local rotation = {
       if
         GetUnitField("player", "power2", 1) >= 15
         and is_on_cooldown(SPELL_ID_SLAM)
-        and rotationState.queued_attack ~= "Mortal Strike"
-        and rotationState.queued_attack ~= "Whirlwind"
+        and rotationState.queued_attack_id ~= SPELL_ID_MORTALSTRIKE
+        and rotationState.queued_attack_id ~= SPELL_ID_WHIRLWIND
         and UnitExists("target")
         and IsSpellInRange("Slam", "target") == 1
       then
@@ -154,7 +155,7 @@ local rotation = {
       if
         GetUnitField("player", "power2", 1) >= 25
         and is_on_cooldown(SPELL_ID_WHIRLWIND)
-        and rotationState.queued_attack ~= "Mortal Strike"
+        and rotationState.queued_attack_id ~= SPELL_ID_MORTALSTRIKE
         and not IsCurrentAction(62)
         and UnitExists("target")
         and IsSpellInRange("Whirlwind", "target") == 1
@@ -171,8 +172,8 @@ local rotation = {
       if
         GetUnitField("player", "power2", 1) >= 15
         and is_on_cooldown(SPELL_ID_SLAM)
-        and rotationState.queued_attack ~= "Mortal Strike"
-        and rotationState.queued_attack ~= "Whirlwind"
+        and rotationState.queued_attack_id ~= SPELL_ID_MORTALSTRIKE
+        and rotationState.queued_attack_id ~= SPELL_ID_WHIRLWIND
         and UnitExists("target")
         and IsSpellInRange("Slam", "target") == 1
       then
@@ -217,10 +218,15 @@ frame_autoattack:SetScript("OnEvent", function()
     local eventCode = arg1
     local spellId = arg2
 
+    -- eventCode values: 0=ON_SWING_QUEUED, 1=ON_SWING_QUEUE_POPPED,
+    -- 2=NORMAL_QUEUED, 3=NORMAL_QUEUE_POPPED,
+    -- 4=NON_GCD_QUEUED, 5=NON_GCD_QUEUE_POPPED
     if eventCode == 0 or eventCode == 2 or eventCode == 4 then
-      rotationState.queued_attack = GetSpellRecField(spellId, "name", 1)
+      -- A spell was queued – store its ID
+      rotationState.queued_attack_id = spellId
     elseif eventCode == 1 or eventCode == 3 or eventCode == 5 then
-      rotationState.queued_attack = nil
+      -- A spell was popped from queue – clear the ID
+      rotationState.queued_attack_id = nil
     end
   end
 end)
