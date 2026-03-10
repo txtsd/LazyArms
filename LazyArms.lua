@@ -103,11 +103,11 @@ local function has_buff(spellId)
   return false
 end
 
-local function is_on_cooldown(spell_id)
+local function is_off_cooldown(spell_id)
   local cd_table = GetSpellIdCooldown(spell_id)
   if cd_table then
-    local spell_is_on_cooldown = cd_table.isOnCooldown
-    return spell_is_on_cooldown == 0
+    local spell_is_off_cooldown = cd_table.isOnCooldown
+    return spell_is_off_cooldown == 0
   end
   return false
 end
@@ -178,13 +178,13 @@ local function pre_rotation(use_sweeping_strikes)
   -- Charge & Intercept
   if UnitExists("target") and UnitCanAttack("player", "target") == 1 then
     if IsSpellInRange("Intercept", "target") == 1 then
-      if is_on_cooldown(SPELL_ID_INTERCEPT) and GetUnitField("player", "power2", 1) >= 10 then
+      if is_off_cooldown(SPELL_ID_INTERCEPT) and GetUnitField("player", "power2", 1) >= 10 then
         CastSpellByName("Intercept")
         return true
       end
     end
     if IsSpellInRange("Charge", "target") == 1 then
-      if not in_combat() and is_on_cooldown(SPELL_ID_CHARGE) then
+      if not in_combat() and is_off_cooldown(SPELL_ID_CHARGE) then
         CastSpellByName("Charge")
         return true
       end
@@ -195,7 +195,7 @@ local function pre_rotation(use_sweeping_strikes)
   if use_sweeping_strikes then
     if
       in_combat()
-      and is_on_cooldown(SPELL_ID_SWEEPING_STRIKES)
+      and is_off_cooldown(SPELL_ID_SWEEPING_STRIKES)
       and UnitExists("target")
     then
       CastSpellByName("Sweeping Strikes")
@@ -273,7 +273,7 @@ local function run()
   if
     IsSpellUsable("Overpower") == 1
     and GetUnitField("player", "power2", 1) <= 25
-    and is_on_cooldown(SPELL_ID_OVERPOWER)
+    and is_off_cooldown(SPELL_ID_OVERPOWER)
   then
     CastSpellByName("Overpower")
     return
@@ -281,7 +281,7 @@ local function run()
   if
     IsSpellUsable("Revenge") == 1
     and GetUnitField("player", "power2", 1) <= 25
-    and is_on_cooldown(SPELL_ID_REVENGE)
+    and is_off_cooldown(SPELL_ID_REVENGE)
   then
     CastSpellByName("Revenge")
     return
@@ -295,7 +295,7 @@ local function run()
   if
     not isCastingSlam
     and GetUnitField("player", "power2", 1) >= 30
-    and is_on_cooldown(SPELL_ID_MORTALSTRIKE)
+    and is_off_cooldown(SPELL_ID_MORTALSTRIKE)
     and rotationState.queued_attack_id ~= SPELL_ID_WHIRLWIND
     and UnitExists("target")
     and IsSpellInRange("Mortal Strike", "target") == 1
@@ -308,7 +308,7 @@ local function run()
   if
     not isCastingSlam
     and GetUnitField("player", "power2", 1) >= 25
-    and is_on_cooldown(SPELL_ID_WHIRLWIND)
+    and is_off_cooldown(SPELL_ID_WHIRLWIND)
     and rotationState.queued_attack_id ~= SPELL_ID_MORTALSTRIKE
     and UnitExists("target")
     and UnitXP("distanceBetween", "player", "target", "AoE") <= 8
@@ -323,7 +323,7 @@ local function run()
   if
     autoSinceSlam
     and GetUnitField("player", "power2", 1) >= 15
-    and is_on_cooldown(SPELL_ID_SLAM)
+    and is_off_cooldown(SPELL_ID_SLAM)
     and rotationState.queued_attack_id ~= SPELL_ID_MORTALSTRIKE
     and rotationState.queued_attack_id ~= SPELL_ID_WHIRLWIND
     and UnitExists("target")
@@ -365,7 +365,7 @@ local function run_aoe()
   -- Whirlwind (top GCD priority)
   if
     GetUnitField("player", "power2", 1) >= 25
-    and is_on_cooldown(SPELL_ID_WHIRLWIND)
+    and is_off_cooldown(SPELL_ID_WHIRLWIND)
     and UnitExists("target")
     and UnitXP("distanceBetween", "player", "target", "AoE") <= 8
   then
@@ -391,7 +391,7 @@ local function run_aoe()
   -- Mortal Strike (fill GCDs)
   if
     GetUnitField("player", "power2", 1) >= 30
-    and is_on_cooldown(SPELL_ID_MORTALSTRIKE)
+    and is_off_cooldown(SPELL_ID_MORTALSTRIKE)
     and UnitExists("target")
     and IsSpellInRange("Mortal Strike", "target") == 1
   then
