@@ -41,6 +41,7 @@ local SPELL_ID_SLAM = 45961
 local SPELL_ID_MORTALSTRIKE = 27580
 local SPELL_ID_WHIRLWIND = 1680
 local SPELL_ID_BATTLE_SHOUT = 11551
+local SPELL_ID_HEROIC_STRIKE = 11567
 local SPELL_ID_CLEAVE = 20569
 local SPELL_ID_SWEEPING_STRIKES = 12292
 
@@ -312,6 +313,17 @@ local function run()
   then
     CastSpellByName("Slam")
     rotationState.lastSlamCast = GetTime()
+    return
+  end
+
+  -- Heroic Strike (dump excess rage to avoid capping)
+  if
+    GetUnitField("player", "power2", 1) >= 80
+    and rotationState.queued_attack_id ~= SPELL_ID_HEROIC_STRIKE
+    and UnitExists("target")
+    and IsSpellInRange("Heroic Strike", "target") == 1
+  then
+    CastSpellByName("Heroic Strike")
     return
   end
 end
