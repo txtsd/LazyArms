@@ -12,8 +12,8 @@ if not libdebuff then
   return
 end
 
--- Check Nampower by testing for a unique function it provides
-if not GetCastInfo or type(GetCastInfo) ~= "function" then
+-- Check Nampower by testing for its version
+if not GetNampowerVersion or type(GetNampowerVersion) ~= "function" then
   print("LazyArms: Nampower not loaded – addon disabled.")
   return
 end
