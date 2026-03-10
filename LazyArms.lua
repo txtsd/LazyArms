@@ -165,37 +165,41 @@ frame_autoattack:SetScript("OnEvent", function()
 end)
 
 -- ============================================================================
--- 7. Rotation runner
+-- 7. Pre-rotation (shared between single-target and AoE)
 -- ============================================================================
-local function run()
+local function pre_rotation(use_sweeping_strikes)
   -- Auto Attack
   local _, _, _, _, _, _, autoattack = GetCurrentCastingInfo()
   if autoattack ~= 1 then
     CastSpellByName("Attack")
-    return
-  end
-
-  -- Reset rotation state if no target or out of combat
-  if not UnitExists("target") or not in_combat() then
-    rotationState.lastSlamCast = nil
-    -- Don't return here; Still allow pre‑combat actions like Charge
+    return true
   end
 
   -- Charge & Intercept
   if UnitExists("target") and UnitCanAttack("player", "target") == 1 then
-    -- Check Intercept first: if in range, off cooldown, and have enough rage
     if IsSpellInRange("Intercept", "target") == 1 then
       if is_on_cooldown(SPELL_ID_INTERCEPT) and GetUnitField("player", "power2", 1) >= 10 then
         CastSpellByName("Intercept")
-        return
+        return true
       end
     end
-    -- If Intercept not available, try Charge (only out of combat)
     if IsSpellInRange("Charge", "target") == 1 then
       if not in_combat() and is_on_cooldown(SPELL_ID_CHARGE) then
         CastSpellByName("Charge")
-        return
+        return true
       end
+    end
+  end
+
+  -- Sweeping Strikes (AoE only, before stance check to avoid loop)
+  if use_sweeping_strikes then
+    if
+      in_combat()
+      and is_on_cooldown(SPELL_ID_SWEEPING_STRIKES)
+      and UnitExists("target")
+    then
+      CastSpellByName("Sweeping Strikes")
+      return true
     end
   end
 
@@ -212,13 +216,27 @@ local function run()
   end
   if is_berserker == 0 then
     CastSpellByName("Berserker Stance")
-    return
+    return true
   end
 
   -- Battle Shout
   if not has_buff(SPELL_ID_BATTLE_SHOUT) then
     CastSpellByName("Battle Shout")
-    return
+    return true
+  end
+
+  return false
+end
+
+-- ============================================================================
+-- 8. Single-target rotation runner
+-- ============================================================================
+local function run()
+  if pre_rotation(false) then return end
+
+  -- Reset rotation state if no target or out of combat
+  if not UnitExists("target") or not in_combat() then
+    rotationState.lastSlamCast = nil
   end
 
   -- Execute
@@ -329,63 +347,10 @@ local function run()
 end
 
 -- ============================================================================
--- 8. AoE rotation runner
+-- 9. AoE rotation runner
 -- ============================================================================
 local function run_aoe()
-  -- Auto Attack
-  local _, _, _, _, _, _, autoattack = GetCurrentCastingInfo()
-  if autoattack ~= 1 then
-    CastSpellByName("Attack")
-    return
-  end
-
-  -- Charge & Intercept
-  if UnitExists("target") and UnitCanAttack("player", "target") == 1 then
-    if IsSpellInRange("Intercept", "target") == 1 then
-      if is_on_cooldown(SPELL_ID_INTERCEPT) and GetUnitField("player", "power2", 1) >= 10 then
-        CastSpellByName("Intercept")
-        return
-      end
-    end
-    if IsSpellInRange("Charge", "target") == 1 then
-      if not in_combat() and is_on_cooldown(SPELL_ID_CHARGE) then
-        CastSpellByName("Charge")
-        return
-      end
-    end
-  end
-
-  -- Sweeping Strikes (before stance check so we don't loop)
-  if
-    in_combat()
-    and is_on_cooldown(SPELL_ID_SWEEPING_STRIKES)
-    and UnitExists("target")
-  then
-    CastSpellByName("Sweeping Strikes")
-    return
-  end
-
-  -- Berserker Stance
-  local auras = GetUnitField("player", "aura", 1)
-  local is_berserker = 0
-  if auras then
-    for i = 1, 32 do
-      if auras[i] == STANCE_BERSERKER then
-        is_berserker = 1
-        break
-      end
-    end
-  end
-  if is_berserker == 0 then
-    CastSpellByName("Berserker Stance")
-    return
-  end
-
-  -- Battle Shout
-  if not has_buff(SPELL_ID_BATTLE_SHOUT) then
-    CastSpellByName("Battle Shout")
-    return
-  end
+  if pre_rotation(true) then return end
 
   -- Keep Cleave queued (on-swing, no GCD conflict)
   if
@@ -451,7 +416,7 @@ local function run_aoe()
 end
 
 -- ============================================================================
--- 9. Slash command registration
+-- 10. Slash command registration
 -- ============================================================================
 SlashCmdList["LAZYARMS_SLASH"] = run
 SLASH_LAZYARMS_SLASH1 = "/lazyarms"
