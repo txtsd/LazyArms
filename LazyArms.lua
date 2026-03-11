@@ -185,8 +185,8 @@ local function pre_rotation(use_sweeping_strikes)
   if UnitExists("target") and UnitCanAttack("player", "target") == 1 then
     local dist = UnitXP("distanceBetween", "player", "target", "AoE")
     if dist >= 8 and dist <= 25 then
-      if in_combat() and is_off_cooldown(SPELL_ID_INTERCEPT) and get_rage() >= 10
-        and (not IsInInstance() or UnitAffectingCombat("target") == 1) then
+      if is_off_cooldown(SPELL_ID_INTERCEPT) and get_rage() >= 10
+        and (not IsInInstance() or (in_combat() and UnitAffectingCombat("target") == 1)) then
         CastSpellByName("Intercept")
         return true
       end
