@@ -64,13 +64,13 @@ local function init_spell_data()
   STANCE_BATTLE    = GetSpellIdForName("Battle Stance")
 
   -- Rage costs (manaCost is stored * 10, so divide by 10)
-  RAGE_COST_INTERCEPT    = GetSpellRecField(SPELL_ID_INTERCEPT,    "manaCost") / 10
-  RAGE_COST_EXECUTE      = GetSpellRecField(SPELL_ID_EXECUTE,      "manaCost") / 10
-  RAGE_COST_SUNDER_ARMOR = GetSpellRecField(SPELL_ID_SUNDER_ARMOR, "manaCost") / 10
-  RAGE_COST_MORTALSTRIKE = GetSpellRecField(SPELL_ID_MORTALSTRIKE, "manaCost") / 10
-  RAGE_COST_WHIRLWIND    = GetSpellRecField(SPELL_ID_WHIRLWIND,    "manaCost") / 10
-  RAGE_COST_SLAM         = GetSpellRecField(SPELL_ID_SLAM,         "manaCost") / 10
-  RAGE_COST_CLEAVE       = GetSpellRecField(SPELL_ID_CLEAVE,       "manaCost") / 10
+  if SPELL_ID_INTERCEPT    then RAGE_COST_INTERCEPT    = GetSpellRecField(SPELL_ID_INTERCEPT,    "manaCost") / 10 end
+  if SPELL_ID_EXECUTE      then RAGE_COST_EXECUTE      = GetSpellRecField(SPELL_ID_EXECUTE,      "manaCost") / 10 end
+  if SPELL_ID_SUNDER_ARMOR then RAGE_COST_SUNDER_ARMOR = GetSpellRecField(SPELL_ID_SUNDER_ARMOR, "manaCost") / 10 end
+  if SPELL_ID_MORTALSTRIKE then RAGE_COST_MORTALSTRIKE = GetSpellRecField(SPELL_ID_MORTALSTRIKE, "manaCost") / 10 end
+  if SPELL_ID_WHIRLWIND    then RAGE_COST_WHIRLWIND    = GetSpellRecField(SPELL_ID_WHIRLWIND,    "manaCost") / 10 end
+  if SPELL_ID_SLAM         then RAGE_COST_SLAM         = GetSpellRecField(SPELL_ID_SLAM,         "manaCost") / 10 end
+  if SPELL_ID_CLEAVE       then RAGE_COST_CLEAVE       = GetSpellRecField(SPELL_ID_CLEAVE,       "manaCost") / 10 end
 end
 
 -- ============================================================================
