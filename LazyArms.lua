@@ -254,6 +254,7 @@ local function run()
   -- Reset rotation state if no target or out of combat
   if not UnitExists("target") or not in_combat() then
     rotationState.lastSlamCast = nil
+    rotationState.lastAutoTime = nil
   end
 
   -- Execute
