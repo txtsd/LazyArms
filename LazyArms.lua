@@ -263,6 +263,8 @@ local function run()
     rotationState.lastAutoTime = nil
   end
 
+  local rage = get_rage()
+
   -- Execute
   if UnitExists("target") and UnitCanAttack("player", "target") == 1 then
     local target_hp = GetUnitField("target", "health", 1)
@@ -271,7 +273,7 @@ local function run()
       target_hp
       and target_maxhp
       and (target_hp / target_maxhp * 100) <= 20
-      and get_rage() >= RAGE_COST_EXECUTE
+      and rage >= RAGE_COST_EXECUTE
     then
       CastSpellByName("Execute")
       return
@@ -285,7 +287,7 @@ local function run()
       if sunder_stacks < 5 or sunder_timeleft < 5 then
         local resistances = GetUnitField("target", "resistances")
         local armor = resistances and resistances[1] or 0
-        if armor > 0 and get_rage() >= RAGE_COST_SUNDER_ARMOR then
+        if armor > 0 and rage >= RAGE_COST_SUNDER_ARMOR then
           CastSpellByName("Sunder Armor")
           return
         end
@@ -295,11 +297,11 @@ local function run()
 
   -- Reactions: require stance switch, so only use when rage <= 25 (Tactical Mastery retention
   -- limit) to avoid losing rage on the switch. Also skip if WW is castable at exactly 25 rage.
-  local ww_castable = get_rage() >= RAGE_COST_WHIRLWIND and is_off_cooldown(SPELL_ID_WHIRLWIND)
+  local ww_castable = rage >= RAGE_COST_WHIRLWIND and is_off_cooldown(SPELL_ID_WHIRLWIND)
   if
     IsSpellUsable("Overpower") == 1
     and is_off_cooldown(SPELL_ID_OVERPOWER)
-    and get_rage() <= 25
+    and rage <= 25
     and not ww_castable
   then
     CastSpellByName("Overpower")
@@ -308,7 +310,7 @@ local function run()
   if
     IsSpellUsable("Revenge") == 1
     and is_off_cooldown(SPELL_ID_REVENGE)
-    and get_rage() <= 25
+    and rage <= 25
     and not ww_castable
   then
     CastSpellByName("Revenge")
@@ -322,7 +324,7 @@ local function run()
   -- Mortal Strike (instant, highest priority)
   if
     not isCastingSlam
-    and get_rage() >= RAGE_COST_MORTALSTRIKE
+    and rage >= RAGE_COST_MORTALSTRIKE
     and is_off_cooldown(SPELL_ID_MORTALSTRIKE)
     and rotationState.queued_attack_id ~= SPELL_ID_WHIRLWIND
     and UnitExists("target")
@@ -335,7 +337,7 @@ local function run()
   -- Whirlwind (instant, second priority)
   if
     not isCastingSlam
-    and get_rage() >= RAGE_COST_WHIRLWIND
+    and rage >= RAGE_COST_WHIRLWIND
     and is_off_cooldown(SPELL_ID_WHIRLWIND)
     and rotationState.queued_attack_id ~= SPELL_ID_MORTALSTRIKE
     and UnitExists("target")
@@ -358,7 +360,7 @@ local function run()
     and (now - rotationState.lastAutoTime) <= slam_window_s
   if
     autoSinceSlam
-    and get_rage() >= RAGE_COST_SLAM
+    and rage >= RAGE_COST_SLAM
     and is_off_cooldown(SPELL_ID_SLAM)
     and rotationState.queued_attack_id ~= SPELL_ID_MORTALSTRIKE
     and rotationState.queued_attack_id ~= SPELL_ID_WHIRLWIND
@@ -379,7 +381,7 @@ local function run()
     local dmg_rage      = (avg_dmg / 230.6) * 7.5 / 1.075
     local speed_rage    = base_speed_s * 3.5 / 2.25
     local max_rage      = GetUnitField("player", "maxPower2") / 10
-    local would_cap     = (get_rage() + dmg_rage + speed_rage) >= max_rage
+    local would_cap     = (rage + dmg_rage + speed_rage) >= max_rage
     if
       not isCastingSlam
       and would_cap
@@ -399,9 +401,11 @@ end
 local function run_aoe()
   if pre_rotation(true) then return end
 
+  local rage = get_rage()
+
   -- Keep Cleave queued (on-swing, no GCD conflict)
   if
-    get_rage() >= RAGE_COST_CLEAVE
+    rage >= RAGE_COST_CLEAVE
     and rotationState.queued_attack_id ~= SPELL_ID_CLEAVE
     and UnitExists("target")
   then
@@ -411,7 +415,7 @@ local function run_aoe()
 
   -- Whirlwind (top GCD priority)
   if
-    get_rage() >= RAGE_COST_WHIRLWIND
+    rage >= RAGE_COST_WHIRLWIND
     and is_off_cooldown(SPELL_ID_WHIRLWIND)
     and UnitExists("target")
     and UnitXP("distanceBetween", "player", "target", "AoE") <= 8
@@ -427,7 +431,7 @@ local function run_aoe()
       if sunder_stacks < 1 then
         local resistances = GetUnitField("target", "resistances")
         local armor = resistances and resistances[1] or 0
-        if armor > 0 and get_rage() >= RAGE_COST_SUNDER_ARMOR then
+        if armor > 0 and rage >= RAGE_COST_SUNDER_ARMOR then
           CastSpellByName("Sunder Armor")
           return
         end
@@ -437,7 +441,7 @@ local function run_aoe()
 
   -- Mortal Strike (fill GCDs)
   if
-    get_rage() >= RAGE_COST_MORTALSTRIKE
+    rage >= RAGE_COST_MORTALSTRIKE
     and is_off_cooldown(SPELL_ID_MORTALSTRIKE)
     and UnitExists("target")
     and IsSpellInRange("Mortal Strike", "target") == 1
@@ -454,7 +458,7 @@ local function run_aoe()
       target_hp
       and target_maxhp
       and (target_hp / target_maxhp * 100) <= 20
-      and get_rage() >= RAGE_COST_EXECUTE
+      and rage >= RAGE_COST_EXECUTE
     then
       CastSpellByName("Execute")
       return
