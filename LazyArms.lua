@@ -164,13 +164,7 @@ frame_autoattack:SetScript("OnEvent", function()
   if event == "PLAYER_LOGIN" or event == "SPELLS_CHANGED" then
     init_spell_data()
   elseif event == "AUTO_ATTACK_SELF" then
-    local attackerGuid = arg1
-    local targetGuid = arg2
-    local hitInfo = arg4
-    local victimState = arg5
-
-    if hitInfo then
-      -- print("Got autoattack event!")
+    if arg4 then
       rotationState.lastAutoTime = GetTime()
     end
   elseif event == "SPELL_DAMAGE_EVENT_SELF" then
