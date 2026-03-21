@@ -43,6 +43,8 @@ local STANCE_BERSERKER, STANCE_DEFENSIVE, STANCE_BATTLE
 local RAGE_COST_INTERCEPT, RAGE_COST_EXECUTE, RAGE_COST_SUNDER_ARMOR
 local RAGE_COST_MORTALSTRIKE, RAGE_COST_WHIRLWIND, RAGE_COST_SLAM, RAGE_COST_CLEAVE
 
+local SLAM_BASE_CAST_MS
+
 local function init_spell_data()
   SPELL_ID_CHARGE          = GetSpellIdForName("Charge")
   SPELL_ID_INTERCEPT       = GetSpellIdForName("Intercept")
@@ -69,7 +71,10 @@ local function init_spell_data()
   if SPELL_ID_SUNDER_ARMOR then RAGE_COST_SUNDER_ARMOR = GetSpellRecField(SPELL_ID_SUNDER_ARMOR, "manaCost") / 10 end
   if SPELL_ID_MORTALSTRIKE then RAGE_COST_MORTALSTRIKE = GetSpellRecField(SPELL_ID_MORTALSTRIKE, "manaCost") / 10 end
   if SPELL_ID_WHIRLWIND    then RAGE_COST_WHIRLWIND    = GetSpellRecField(SPELL_ID_WHIRLWIND,    "manaCost") / 10 end
-  if SPELL_ID_SLAM         then RAGE_COST_SLAM         = GetSpellRecField(SPELL_ID_SLAM,         "manaCost") / 10 end
+  if SPELL_ID_SLAM         then
+    RAGE_COST_SLAM     = GetSpellRecField(SPELL_ID_SLAM, "manaCost") / 10
+    SLAM_BASE_CAST_MS  = GetSpellRecField(SPELL_ID_SLAM, "castingTimeIndex") * 100
+  end
   if SPELL_ID_CLEAVE       then RAGE_COST_CLEAVE       = GetSpellRecField(SPELL_ID_CLEAVE,       "manaCost") / 10 end
 end
 
@@ -345,7 +350,7 @@ local function run()
   local now = GetTime()
   local swing_ms = GetUnitField("player", "baseAttackTime") or 2000
   local mod_cast_speed = GetUnitField("player", "modCastSpeed") or 1.0
-  local slam_cast_ms = GetSpellRecField(SPELL_ID_SLAM, "castingTimeIndex") * 100 * mod_cast_speed
+  local slam_cast_ms = (SLAM_BASE_CAST_MS or 1500) * mod_cast_speed
   local slam_window_s = (swing_ms - slam_cast_ms) / 1000
   local autoSinceSlam = rotationState.lastAutoTime
     and (not rotationState.lastSlamCast or rotationState.lastAutoTime > rotationState.lastSlamCast)
