@@ -61,7 +61,7 @@ Each press evaluates the following priority list top to bottom and executes the 
 
 ### Slam and the swing timer
 
-Slam has a 1.5 second cast time (modified by any cast speed debuffs on you). If you start casting Slam too early in a swing cycle, the cast will push back your next auto attack, which is a significant DPS loss on a 2H warrior.
+Slam has a 2 second cast time (modified by any cast speed debuffs on you). If you start casting Slam too early in a swing cycle, the cast will push back your next auto attack, which is a significant DPS loss on a 2H warrior.
 
 The safe window to begin Slam is: `swing_speed - slam_cast_time` seconds after an auto attack lands. LazyArms tracks the exact timestamp of every auto attack hit via Nampower's `AUTO_ATTACK_SELF` event, reads your current swing speed and cast speed modifier directly from unit fields each press, and only allows Slam to fire inside that window. Outside the window - even if Slam is off cooldown and you have the rage - it will not cast.
 
