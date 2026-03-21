@@ -238,17 +238,7 @@ local function pre_rotation(use_sweeping_strikes)
   end
 
   -- Berserker Stance
-  local auras = GetUnitField("player", "aura", 1)
-  local is_berserker = 0
-  if auras then
-    for i = 1, 32 do
-      if auras[i] == STANCE_BERSERKER then
-        is_berserker = 1
-        break
-      end
-    end
-  end
-  if is_berserker == 0 then
+  if not has_buff(STANCE_BERSERKER) then
     CastSpellByName("Berserker Stance")
     return true
   end
