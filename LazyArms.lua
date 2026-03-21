@@ -32,24 +32,24 @@ SetCVar("NP_EnableAutoAttackEvents", "1")
 -- ============================================================================
 -- 3. Spell ID constants (unchanged)
 -- ============================================================================
-local SPELL_ID_CHARGE = 11578
-local SPELL_ID_INTERCEPT = 20617
-local SPELL_ID_INTERVENE = 45595
-local SPELL_ID_OVERPOWER = 11585
-local SPELL_ID_REVENGE = 11601
-local SPELL_ID_EXECUTE = 20662
-local SPELL_ID_SUNDER_ARMOR = 11597
-local SPELL_ID_SLAM = 45961
-local SPELL_ID_MORTALSTRIKE = 27580
-local SPELL_ID_WHIRLWIND = 1680
-local SPELL_ID_BATTLE_SHOUT = 11551
-local SPELL_ID_HEROIC_STRIKE = 11567
-local SPELL_ID_CLEAVE = 20569
-local SPELL_ID_SWEEPING_STRIKES = 12292
+local SPELL_ID_CHARGE          = GetSpellIdForName("Charge")
+local SPELL_ID_INTERCEPT       = GetSpellIdForName("Intercept")
+local SPELL_ID_INTERVENE       = GetSpellIdForName("Intervene")
+local SPELL_ID_OVERPOWER       = GetSpellIdForName("Overpower")
+local SPELL_ID_REVENGE         = GetSpellIdForName("Revenge")
+local SPELL_ID_EXECUTE         = GetSpellIdForName("Execute")
+local SPELL_ID_SUNDER_ARMOR    = GetSpellIdForName("Sunder Armor")
+local SPELL_ID_SLAM            = GetSpellIdForName("Slam")
+local SPELL_ID_MORTALSTRIKE    = GetSpellIdForName("Mortal Strike")
+local SPELL_ID_WHIRLWIND       = GetSpellIdForName("Whirlwind")
+local SPELL_ID_BATTLE_SHOUT    = GetSpellIdForName("Battle Shout")
+local SPELL_ID_HEROIC_STRIKE   = GetSpellIdForName("Heroic Strike")
+local SPELL_ID_CLEAVE          = GetSpellIdForName("Cleave")
+local SPELL_ID_SWEEPING_STRIKES = GetSpellIdForName("Sweeping Strikes")
 
-local STANCE_BERSERKER = 2458
-local STANCE_DEFENSIVE = 71
-local STANCE_BATTLE = 2457
+local STANCE_BERSERKER = GetSpellIdForName("Berserker Stance")
+local STANCE_DEFENSIVE = GetSpellIdForName("Defensive Stance")
+local STANCE_BATTLE    = GetSpellIdForName("Battle Stance")
 
 -- Rage costs looked up once from DBC at load time
 local RAGE_COST_INTERCEPT    = GetSpellRecField(SPELL_ID_INTERCEPT,    "manaCost")
