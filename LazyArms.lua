@@ -30,35 +30,48 @@ end
 SetCVar("NP_EnableAutoAttackEvents", "1")
 
 -- ============================================================================
--- 3. Spell ID constants (unchanged)
+-- 3. Spell IDs and rage costs (populated after PLAYER_LOGIN when spellbook is ready)
 -- ============================================================================
-local SPELL_ID_CHARGE          = GetSpellIdForName("Charge")
-local SPELL_ID_INTERCEPT       = GetSpellIdForName("Intercept")
-local SPELL_ID_INTERVENE       = GetSpellIdForName("Intervene")
-local SPELL_ID_OVERPOWER       = GetSpellIdForName("Overpower")
-local SPELL_ID_REVENGE         = GetSpellIdForName("Revenge")
-local SPELL_ID_EXECUTE         = GetSpellIdForName("Execute")
-local SPELL_ID_SUNDER_ARMOR    = GetSpellIdForName("Sunder Armor")
-local SPELL_ID_SLAM            = GetSpellIdForName("Slam")
-local SPELL_ID_MORTALSTRIKE    = GetSpellIdForName("Mortal Strike")
-local SPELL_ID_WHIRLWIND       = GetSpellIdForName("Whirlwind")
-local SPELL_ID_BATTLE_SHOUT    = GetSpellIdForName("Battle Shout")
-local SPELL_ID_HEROIC_STRIKE   = GetSpellIdForName("Heroic Strike")
-local SPELL_ID_CLEAVE          = GetSpellIdForName("Cleave")
-local SPELL_ID_SWEEPING_STRIKES = GetSpellIdForName("Sweeping Strikes")
+local SPELL_ID_CHARGE, SPELL_ID_INTERCEPT, SPELL_ID_INTERVENE
+local SPELL_ID_OVERPOWER, SPELL_ID_REVENGE, SPELL_ID_EXECUTE
+local SPELL_ID_SUNDER_ARMOR, SPELL_ID_SLAM, SPELL_ID_MORTALSTRIKE
+local SPELL_ID_WHIRLWIND, SPELL_ID_BATTLE_SHOUT, SPELL_ID_HEROIC_STRIKE
+local SPELL_ID_CLEAVE, SPELL_ID_SWEEPING_STRIKES
 
-local STANCE_BERSERKER = GetSpellIdForName("Berserker Stance")
-local STANCE_DEFENSIVE = GetSpellIdForName("Defensive Stance")
-local STANCE_BATTLE    = GetSpellIdForName("Battle Stance")
+local STANCE_BERSERKER, STANCE_DEFENSIVE, STANCE_BATTLE
 
--- Rage costs looked up once from DBC at load time (manaCost is stored * 10, so divide by 10)
-local RAGE_COST_INTERCEPT    = GetSpellRecField(SPELL_ID_INTERCEPT,    "manaCost") / 10
-local RAGE_COST_EXECUTE      = GetSpellRecField(SPELL_ID_EXECUTE,      "manaCost") / 10
-local RAGE_COST_SUNDER_ARMOR = GetSpellRecField(SPELL_ID_SUNDER_ARMOR, "manaCost") / 10
-local RAGE_COST_MORTALSTRIKE = GetSpellRecField(SPELL_ID_MORTALSTRIKE, "manaCost") / 10
-local RAGE_COST_WHIRLWIND    = GetSpellRecField(SPELL_ID_WHIRLWIND,    "manaCost") / 10
-local RAGE_COST_SLAM         = GetSpellRecField(SPELL_ID_SLAM,         "manaCost") / 10
-local RAGE_COST_CLEAVE       = GetSpellRecField(SPELL_ID_CLEAVE,       "manaCost") / 10
+local RAGE_COST_INTERCEPT, RAGE_COST_EXECUTE, RAGE_COST_SUNDER_ARMOR
+local RAGE_COST_MORTALSTRIKE, RAGE_COST_WHIRLWIND, RAGE_COST_SLAM, RAGE_COST_CLEAVE
+
+local function init_spell_data()
+  SPELL_ID_CHARGE          = GetSpellIdForName("Charge")
+  SPELL_ID_INTERCEPT       = GetSpellIdForName("Intercept")
+  SPELL_ID_INTERVENE       = GetSpellIdForName("Intervene")
+  SPELL_ID_OVERPOWER       = GetSpellIdForName("Overpower")
+  SPELL_ID_REVENGE         = GetSpellIdForName("Revenge")
+  SPELL_ID_EXECUTE         = GetSpellIdForName("Execute")
+  SPELL_ID_SUNDER_ARMOR    = GetSpellIdForName("Sunder Armor")
+  SPELL_ID_SLAM            = GetSpellIdForName("Slam")
+  SPELL_ID_MORTALSTRIKE    = GetSpellIdForName("Mortal Strike")
+  SPELL_ID_WHIRLWIND       = GetSpellIdForName("Whirlwind")
+  SPELL_ID_BATTLE_SHOUT    = GetSpellIdForName("Battle Shout")
+  SPELL_ID_HEROIC_STRIKE   = GetSpellIdForName("Heroic Strike")
+  SPELL_ID_CLEAVE          = GetSpellIdForName("Cleave")
+  SPELL_ID_SWEEPING_STRIKES = GetSpellIdForName("Sweeping Strikes")
+
+  STANCE_BERSERKER = GetSpellIdForName("Berserker Stance")
+  STANCE_DEFENSIVE = GetSpellIdForName("Defensive Stance")
+  STANCE_BATTLE    = GetSpellIdForName("Battle Stance")
+
+  -- Rage costs (manaCost is stored * 10, so divide by 10)
+  RAGE_COST_INTERCEPT    = GetSpellRecField(SPELL_ID_INTERCEPT,    "manaCost") / 10
+  RAGE_COST_EXECUTE      = GetSpellRecField(SPELL_ID_EXECUTE,      "manaCost") / 10
+  RAGE_COST_SUNDER_ARMOR = GetSpellRecField(SPELL_ID_SUNDER_ARMOR, "manaCost") / 10
+  RAGE_COST_MORTALSTRIKE = GetSpellRecField(SPELL_ID_MORTALSTRIKE, "manaCost") / 10
+  RAGE_COST_WHIRLWIND    = GetSpellRecField(SPELL_ID_WHIRLWIND,    "manaCost") / 10
+  RAGE_COST_SLAM         = GetSpellRecField(SPELL_ID_SLAM,         "manaCost") / 10
+  RAGE_COST_CLEAVE       = GetSpellRecField(SPELL_ID_CLEAVE,       "manaCost") / 10
+end
 
 -- ============================================================================
 -- 4. Helper functions (using stored libdebuff and Nampower)
@@ -145,8 +158,12 @@ local frame_autoattack = CreateFrame("Frame", "LazyArmsAutoAttack")
 frame_autoattack:RegisterEvent("AUTO_ATTACK_SELF")
 frame_autoattack:RegisterEvent("SPELL_DAMAGE_EVENT_SELF")
 frame_autoattack:RegisterEvent("SPELL_QUEUE_EVENT")
+frame_autoattack:RegisterEvent("PLAYER_LOGIN")
+frame_autoattack:RegisterEvent("SPELLS_CHANGED")
 frame_autoattack:SetScript("OnEvent", function()
-  if event == "AUTO_ATTACK_SELF" then
+  if event == "PLAYER_LOGIN" or event == "SPELLS_CHANGED" then
+    init_spell_data()
+  elseif event == "AUTO_ATTACK_SELF" then
     local attackerGuid = arg1
     local targetGuid = arg2
     local hitInfo = arg4
