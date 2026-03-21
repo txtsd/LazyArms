@@ -37,6 +37,8 @@ local SPELL_ID_INTERCEPT = 20617
 local SPELL_ID_INTERVENE = 45595
 local SPELL_ID_OVERPOWER = 11585
 local SPELL_ID_REVENGE = 11601
+local SPELL_ID_EXECUTE = 20662
+local SPELL_ID_SUNDER_ARMOR = 11597
 local SPELL_ID_SLAM = 45961
 local SPELL_ID_MORTALSTRIKE = 27580
 local SPELL_ID_WHIRLWIND = 1680
@@ -48,6 +50,15 @@ local SPELL_ID_SWEEPING_STRIKES = 12292
 local STANCE_BERSERKER = 2458
 local STANCE_DEFENSIVE = 71
 local STANCE_BATTLE = 2457
+
+-- Rage costs looked up once from DBC at load time
+local RAGE_COST_INTERCEPT    = GetSpellRecField(SPELL_ID_INTERCEPT,    "manaCost")
+local RAGE_COST_EXECUTE      = GetSpellRecField(SPELL_ID_EXECUTE,      "manaCost")
+local RAGE_COST_SUNDER_ARMOR = GetSpellRecField(SPELL_ID_SUNDER_ARMOR, "manaCost")
+local RAGE_COST_MORTALSTRIKE = GetSpellRecField(SPELL_ID_MORTALSTRIKE, "manaCost")
+local RAGE_COST_WHIRLWIND    = GetSpellRecField(SPELL_ID_WHIRLWIND,    "manaCost")
+local RAGE_COST_SLAM         = GetSpellRecField(SPELL_ID_SLAM,         "manaCost")
+local RAGE_COST_CLEAVE       = GetSpellRecField(SPELL_ID_CLEAVE,       "manaCost")
 
 -- ============================================================================
 -- 4. Helper functions (using stored libdebuff and Nampower)
@@ -185,7 +196,7 @@ local function pre_rotation(use_sweeping_strikes)
   if UnitExists("target") and UnitCanAttack("player", "target") == 1 then
     local dist = UnitXP("distanceBetween", "player", "target", "AoE")
     if dist >= 8 and dist <= 25 then
-      if is_off_cooldown(SPELL_ID_INTERCEPT) and get_rage() >= 10
+      if is_off_cooldown(SPELL_ID_INTERCEPT) and get_rage() >= RAGE_COST_INTERCEPT
         and (not IsInInstance() or (in_combat() and UnitAffectingCombat("target") == 1)) then
         CastSpellByName("Intercept")
         return true
@@ -253,7 +264,7 @@ local function run()
       target_hp
       and target_maxhp
       and (target_hp / target_maxhp * 100) <= 20
-      and get_rage() >= 15
+      and get_rage() >= RAGE_COST_EXECUTE
     then
       CastSpellByName("Execute")
       return
@@ -267,7 +278,7 @@ local function run()
       if sunder_stacks < 5 or sunder_timeleft < 5 then
         local resistances = GetUnitField("target", "resistances")
         local armor = resistances and resistances[1] or 0
-        if armor > 0 and get_rage() >= 10 then
+        if armor > 0 and get_rage() >= RAGE_COST_SUNDER_ARMOR then
           CastSpellByName("Sunder Armor")
           return
         end
@@ -300,7 +311,7 @@ local function run()
   -- Mortal Strike (instant, highest priority)
   if
     not isCastingSlam
-    and get_rage() >= 30
+    and get_rage() >= RAGE_COST_MORTALSTRIKE
     and is_off_cooldown(SPELL_ID_MORTALSTRIKE)
     and rotationState.queued_attack_id ~= SPELL_ID_WHIRLWIND
     and UnitExists("target")
@@ -313,7 +324,7 @@ local function run()
   -- Whirlwind (instant, second priority)
   if
     not isCastingSlam
-    and get_rage() >= 25
+    and get_rage() >= RAGE_COST_WHIRLWIND
     and is_off_cooldown(SPELL_ID_WHIRLWIND)
     and rotationState.queued_attack_id ~= SPELL_ID_MORTALSTRIKE
     and UnitExists("target")
@@ -336,7 +347,7 @@ local function run()
     and (now - rotationState.lastAutoTime) <= slam_window_s
   if
     autoSinceSlam
-    and get_rage() >= 15
+    and get_rage() >= RAGE_COST_SLAM
     and is_off_cooldown(SPELL_ID_SLAM)
     and rotationState.queued_attack_id ~= SPELL_ID_MORTALSTRIKE
     and rotationState.queued_attack_id ~= SPELL_ID_WHIRLWIND
@@ -368,7 +379,7 @@ local function run_aoe()
 
   -- Keep Cleave queued (on-swing, no GCD conflict)
   if
-    get_rage() >= 20
+    get_rage() >= RAGE_COST_CLEAVE
     and rotationState.queued_attack_id ~= SPELL_ID_CLEAVE
     and UnitExists("target")
   then
@@ -378,7 +389,7 @@ local function run_aoe()
 
   -- Whirlwind (top GCD priority)
   if
-    get_rage() >= 25
+    get_rage() >= RAGE_COST_WHIRLWIND
     and is_off_cooldown(SPELL_ID_WHIRLWIND)
     and UnitExists("target")
     and UnitXP("distanceBetween", "player", "target", "AoE") <= 8
@@ -394,7 +405,7 @@ local function run_aoe()
       if sunder_stacks < 1 then
         local resistances = GetUnitField("target", "resistances")
         local armor = resistances and resistances[1] or 0
-        if armor > 0 and get_rage() >= 10 then
+        if armor > 0 and get_rage() >= RAGE_COST_SUNDER_ARMOR then
           CastSpellByName("Sunder Armor")
           return
         end
@@ -404,7 +415,7 @@ local function run_aoe()
 
   -- Mortal Strike (fill GCDs)
   if
-    get_rage() >= 30
+    get_rage() >= RAGE_COST_MORTALSTRIKE
     and is_off_cooldown(SPELL_ID_MORTALSTRIKE)
     and UnitExists("target")
     and IsSpellInRange("Mortal Strike", "target") == 1
@@ -421,7 +432,7 @@ local function run_aoe()
       target_hp
       and target_maxhp
       and (target_hp / target_maxhp * 100) <= 20
-      and get_rage() >= 15
+      and get_rage() >= RAGE_COST_EXECUTE
     then
       CastSpellByName("Execute")
       return
