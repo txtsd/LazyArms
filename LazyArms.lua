@@ -286,19 +286,23 @@ local function run()
     end
   end
 
-  -- Reactions
+  -- Reactions: require stance switch, so only use when rage <= 25 (Tactical Mastery retention
+  -- limit) to avoid losing rage on the switch. Also skip if WW is castable at exactly 25 rage.
+  local ww_castable = get_rage() >= RAGE_COST_WHIRLWIND and is_off_cooldown(SPELL_ID_WHIRLWIND)
   if
     IsSpellUsable("Overpower") == 1
-    and get_rage() <= 25
     and is_off_cooldown(SPELL_ID_OVERPOWER)
+    and get_rage() <= 25
+    and not ww_castable
   then
     CastSpellByName("Overpower")
     return
   end
   if
     IsSpellUsable("Revenge") == 1
-    and get_rage() <= 25
     and is_off_cooldown(SPELL_ID_REVENGE)
+    and get_rage() <= 25
+    and not ww_castable
   then
     CastSpellByName("Revenge")
     return
