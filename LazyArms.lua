@@ -363,15 +363,26 @@ local function run()
     return
   end
 
-  -- Heroic Strike (dump excess rage to avoid capping)
-  if
-    get_rage() >= 80
-    and rotationState.queued_attack_id ~= SPELL_ID_HEROIC_STRIKE
-    and UnitExists("target")
-    and IsSpellInRange("Heroic Strike", "target") == 1
-  then
-    CastSpellByName("Heroic Strike")
-    return
+  -- Heroic Strike: queue if next swing would rage cap
+  -- Rage formula (hit): ((dmg / 230.6) * 7.5 / 1.075) + (base_speed * 3.5 / 2.25)
+  local weapon = GetEquippedItem("player", 16)
+  if weapon then
+    local base_speed_s  = GetItemStatsField(weapon.itemId, "delay") / 1000
+    local avg_dmg       = (GetUnitField("player", "minDamage") + GetUnitField("player", "maxDamage")) / 2
+    local dmg_rage      = (avg_dmg / 230.6) * 7.5 / 1.075
+    local speed_rage    = base_speed_s * 3.5 / 2.25
+    local max_rage      = GetUnitField("player", "maxPower2") / 10
+    local would_cap     = (get_rage() + dmg_rage + speed_rage) >= max_rage
+    if
+      not isCastingSlam
+      and would_cap
+      and rotationState.queued_attack_id ~= SPELL_ID_HEROIC_STRIKE
+      and UnitExists("target")
+      and IsSpellInRange("Heroic Strike", "target") == 1
+    then
+      CastSpellByName("Heroic Strike")
+      return
+    end
   end
 end
 
