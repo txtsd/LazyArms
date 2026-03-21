@@ -324,8 +324,10 @@ local function run()
   end
 
   -- Slam (filler, gated on auto-attack to avoid delaying swings)
+  local now = GetTime()
   local autoSinceSlam = rotationState.lastAutoTime
     and (not rotationState.lastSlamCast or rotationState.lastAutoTime > rotationState.lastSlamCast)
+    and (now - rotationState.lastAutoTime) <= 0.5
   if
     autoSinceSlam
     and get_rage() >= 15
