@@ -51,14 +51,14 @@ local STANCE_BERSERKER = GetSpellIdForName("Berserker Stance")
 local STANCE_DEFENSIVE = GetSpellIdForName("Defensive Stance")
 local STANCE_BATTLE    = GetSpellIdForName("Battle Stance")
 
--- Rage costs looked up once from DBC at load time
-local RAGE_COST_INTERCEPT    = GetSpellRecField(SPELL_ID_INTERCEPT,    "manaCost")
-local RAGE_COST_EXECUTE      = GetSpellRecField(SPELL_ID_EXECUTE,      "manaCost")
-local RAGE_COST_SUNDER_ARMOR = GetSpellRecField(SPELL_ID_SUNDER_ARMOR, "manaCost")
-local RAGE_COST_MORTALSTRIKE = GetSpellRecField(SPELL_ID_MORTALSTRIKE, "manaCost")
-local RAGE_COST_WHIRLWIND    = GetSpellRecField(SPELL_ID_WHIRLWIND,    "manaCost")
-local RAGE_COST_SLAM         = GetSpellRecField(SPELL_ID_SLAM,         "manaCost")
-local RAGE_COST_CLEAVE       = GetSpellRecField(SPELL_ID_CLEAVE,       "manaCost")
+-- Rage costs looked up once from DBC at load time (manaCost is stored * 10, so divide by 10)
+local RAGE_COST_INTERCEPT    = GetSpellRecField(SPELL_ID_INTERCEPT,    "manaCost") / 10
+local RAGE_COST_EXECUTE      = GetSpellRecField(SPELL_ID_EXECUTE,      "manaCost") / 10
+local RAGE_COST_SUNDER_ARMOR = GetSpellRecField(SPELL_ID_SUNDER_ARMOR, "manaCost") / 10
+local RAGE_COST_MORTALSTRIKE = GetSpellRecField(SPELL_ID_MORTALSTRIKE, "manaCost") / 10
+local RAGE_COST_WHIRLWIND    = GetSpellRecField(SPELL_ID_WHIRLWIND,    "manaCost") / 10
+local RAGE_COST_SLAM         = GetSpellRecField(SPELL_ID_SLAM,         "manaCost") / 10
+local RAGE_COST_CLEAVE       = GetSpellRecField(SPELL_ID_CLEAVE,       "manaCost") / 10
 
 -- ============================================================================
 -- 4. Helper functions (using stored libdebuff and Nampower)
