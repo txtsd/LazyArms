@@ -324,10 +324,16 @@ local function run()
   end
 
   -- Slam (filler, gated on auto-attack to avoid delaying swings)
+  -- Window = swing_speed - slam_cast_time: casting outside this pushes back the next auto attack
   local now = GetTime()
+  local swing_ms = GetUnitField("player", "baseAttackTime") or 2000
+  local mod_cast_speed = GetUnitField("player", "modCastSpeed") or 1.0
+  local slam_cast_ms = GetSpellRecField(SPELL_ID_SLAM, "castingTimeIndex") * 100 * mod_cast_speed
+  local slam_window_s = (swing_ms - slam_cast_ms) / 1000
   local autoSinceSlam = rotationState.lastAutoTime
     and (not rotationState.lastSlamCast or rotationState.lastAutoTime > rotationState.lastSlamCast)
-    and (now - rotationState.lastAutoTime) <= 0.5
+    and slam_window_s > 0
+    and (now - rotationState.lastAutoTime) <= slam_window_s
   if
     autoSinceSlam
     and get_rage() >= 15
