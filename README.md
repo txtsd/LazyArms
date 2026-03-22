@@ -20,11 +20,14 @@ Copy the `LazyArms` folder into your `Interface/AddOns/` directory.
 Create macros and place them on your action bar:
 
 ```
-/lazyarms      -- single-target rotation
-/lazyarmsaoe   -- AoE rotation
+/lazyarms         -- single-target rotation
+/lazyarmsaoe      -- AoE rotation
+/lazyarmsnosunder -- toggle Sunder Armor on/off
 ```
 
 Spam the button. That's it.
+
+Use `/lazyarmsnosunder` to toggle Sunder Armor off when you want to skip it entirely regardless of target state. Note: Expose Armor on the target suppresses Sunder automatically without needing this toggle.
 
 ## Rotations
 
@@ -37,7 +40,7 @@ Each press evaluates the following priority list top to bottom and executes the 
 3. **Berserker Stance** - switches stance if not already in it
 4. **Battle Shout** - maintains the buff
 5. **Execute** - fires immediately when the target is below 20% HP
-6. **Sunder Armor** - maintains 5 stacks; refreshes when under 5 seconds remain; skips armor-less targets entirely
+6. **Sunder Armor** - maintains 5 stacks; refreshes when under 5 seconds remain; skips armor-less targets and targets with Expose Armor entirely; disabled by `/lazyarmsnosunder`
 7. **Overpower / Revenge** - used when available but only below 26 rage, and only when Whirlwind is not already castable (Tactical Mastery awareness - see below)
 8. **Mortal Strike** - highest-priority spender; will not fire if Whirlwind is already queued
 9. **Whirlwind** - second-priority spender; will not fire if Mortal Strike is already queued
@@ -53,7 +56,7 @@ Each press evaluates the following priority list top to bottom and executes the 
 5. **Battle Shout** - maintains the buff
 6. **Cleave** - kept queued as a permanent on-swing replacement; no GCD conflict
 7. **Whirlwind** - top GCD priority when in range
-8. **Sunder Armor** - one application per target for tab-sundering; skips targets already sundered or armor-less
+8. **Sunder Armor** - one application per target for tab-sundering; skips targets already sundered, armor-less, or with Expose Armor; disabled by `/lazyarmsnosunder`
 9. **Mortal Strike** - GCD filler between Whirlwinds
 10. **Execute** - lowest priority finisher
 

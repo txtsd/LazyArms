@@ -48,6 +48,8 @@ local SLAM_BASE_CAST_MS
 -- Expose Armor debuff; skip Sunder Armor when present on target
 local DEBUFF_EXPOSE_ARMOR = 11198
 
+local skipSunder = false
+
 local function init_spell_data()
   SPELL_ID_CHARGE          = GetSpellIdForName("Charge")
   SPELL_ID_INTERCEPT       = GetSpellIdForName("Intercept")
@@ -292,10 +294,11 @@ local function run()
     end
   end
 
-  -- Sunder Armor (skip if target has an equivalent armor-reduction debuff)
+  -- Sunder Armor (skip if target has an equivalent armor-reduction debuff, or mode disabled)
   if
     UnitExists("target")
     and UnitCanAttack("player", "target") == 1
+    and not skipSunder
     and not target_has_debuff(DEBUFF_EXPOSE_ARMOR)
   then
     if IsSpellInRange("Sunder Armor", "target") == 1 then
@@ -440,10 +443,11 @@ local function run_aoe()
     return
   end
 
-  -- Sunder Armor (once per target, tab after this lands; skip if equivalent debuff present)
+  -- Sunder Armor (once per target, tab after this lands; skip if equivalent debuff present or mode disabled)
   if
     UnitExists("target")
     and UnitCanAttack("player", "target") == 1
+    and not skipSunder
     and not target_has_debuff(DEBUFF_EXPOSE_ARMOR)
   then
     if IsSpellInRange("Sunder Armor", "target") == 1 then
@@ -494,3 +498,9 @@ SLASH_LAZYARMS_SLASH1 = "/lazyarms"
 
 SlashCmdList["LAZYARMS_AOE_SLASH"] = run_aoe
 SLASH_LAZYARMS_AOE_SLASH1 = "/lazyarmsaoe"
+
+SlashCmdList["LAZYARMS_NOSUNDER_SLASH"] = function()
+  skipSunder = not skipSunder
+  print("LazyArms: Sunder Armor " .. (skipSunder and "disabled" or "enabled"))
+end
+SLASH_LAZYARMS_NOSUNDER_SLASH1 = "/lazyarmsnosunder"
