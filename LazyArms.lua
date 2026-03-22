@@ -45,6 +45,9 @@ local RAGE_COST_MORTALSTRIKE, RAGE_COST_WHIRLWIND, RAGE_COST_SLAM, RAGE_COST_CLE
 
 local SLAM_BASE_CAST_MS
 
+-- Expose Armor debuff; skip Sunder Armor when present on target
+local DEBUFF_EXPOSE_ARMOR = 11198
+
 local function init_spell_data()
   SPELL_ID_CHARGE          = GetSpellIdForName("Charge")
   SPELL_ID_INTERCEPT       = GetSpellIdForName("Intercept")
@@ -128,6 +131,15 @@ local function has_buff(spellId)
     if auras[i] == spellId then
       return true
     end
+  end
+  return false
+end
+
+local function target_has_debuff(spellId)
+  local auras = GetUnitField("target", "aura", 1)
+  if not auras then return false end
+  for i = 1, 48 do
+    if auras[i] == spellId then return true end
   end
   return false
 end
@@ -280,8 +292,12 @@ local function run()
     end
   end
 
-  -- Sunder Armor
-  if UnitExists("target") and UnitCanAttack("player", "target") == 1 then
+  -- Sunder Armor (skip if target has an equivalent armor-reduction debuff)
+  if
+    UnitExists("target")
+    and UnitCanAttack("player", "target") == 1
+    and not target_has_debuff(DEBUFF_EXPOSE_ARMOR)
+  then
     if IsSpellInRange("Sunder Armor", "target") == 1 then
       local sunder_stacks, sunder_timeleft = get_sunder_stacks()
       if sunder_stacks < 5 or sunder_timeleft < 5 then
@@ -424,8 +440,12 @@ local function run_aoe()
     return
   end
 
-  -- Sunder Armor (once per target, tab after this lands)
-  if UnitExists("target") and UnitCanAttack("player", "target") == 1 then
+  -- Sunder Armor (once per target, tab after this lands; skip if equivalent debuff present)
+  if
+    UnitExists("target")
+    and UnitCanAttack("player", "target") == 1
+    and not target_has_debuff(DEBUFF_EXPOSE_ARMOR)
+  then
     if IsSpellInRange("Sunder Armor", "target") == 1 then
       local sunder_stacks = get_sunder_stacks()
       if sunder_stacks < 1 then
