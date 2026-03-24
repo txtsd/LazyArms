@@ -433,7 +433,7 @@ local function run_aoe()
   -- Keep Cleave queued (on-swing, no GCD conflict)
   if
     rage >= RAGE_COST_CLEAVE
-    and rotationState.queued_attack_id ~= SPELL_ID_CLEAVE
+    and rotationState.queued_on_swing_id ~= SPELL_ID_CLEAVE
     and UnitExists("target")
   then
     CastSpellByName("Cleave")
