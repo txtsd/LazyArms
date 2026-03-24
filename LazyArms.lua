@@ -428,22 +428,24 @@ end
 local function run_aoe()
   if pre_rotation(true) then return end
 
+  -- Do not act while a Slam cast (queued from a prior ST press) is in flight
+  local castId = GetCurrentCastingInfo()
+  if castId == SPELL_ID_SLAM then return end
+
   local rage = get_rage()
 
-  -- Keep Cleave queued (on-swing, no GCD conflict)
+  -- Whirlwind (top GCD priority; coordinate with Sweeping Strikes)
+  -- Hold WW if SS will come off cooldown before WW's remaining cooldown expires,
+  -- so WW always fires with SS charges active.
+  local ss_off_cd, ss_remaining_s = is_off_cooldown(SPELL_ID_SWEEPING_STRIKES)
+  local ww_off_cd, ww_remaining_s = is_off_cooldown(SPELL_ID_WHIRLWIND)
+  local ww_allowed = has_buff(SPELL_ID_SWEEPING_STRIKES)  -- charges active
+    or ss_off_cd                                          -- SS long expired
+    or ss_remaining_s >= ww_remaining_s                  -- SS won't return before WW
   if
-    rage >= RAGE_COST_CLEAVE
-    and rotationState.queued_on_swing_id ~= SPELL_ID_CLEAVE
-    and UnitExists("target")
-  then
-    CastSpellByName("Cleave")
-    return
-  end
-
-  -- Whirlwind (top GCD priority)
-  if
-    rage >= RAGE_COST_WHIRLWIND
-    and is_off_cooldown(SPELL_ID_WHIRLWIND)
+    ww_allowed
+    and ww_off_cd
+    and rage >= RAGE_COST_WHIRLWIND
     and UnitExists("target")
     and UnitXP("distanceBetween", "player", "target", "AoE") <= 8
   then
@@ -451,7 +453,7 @@ local function run_aoe()
     return
   end
 
-  -- Sunder Armor (once per target, tab after this lands; skip if equivalent debuff present or mode disabled)
+  -- Sunder Armor (at least once per mob; skip if equivalent debuff present or mode disabled)
   if
     UnitExists("target")
     and UnitCanAttack("player", "target") == 1
@@ -471,7 +473,19 @@ local function run_aoe()
     end
   end
 
-  -- Mortal Strike (fill GCDs)
+  -- Cleave (queue for next auto; fires only when no higher-priority GCD is available)
+  if
+    rage >= RAGE_COST_CLEAVE
+    and rotationState.queued_on_swing_id ~= SPELL_ID_CLEAVE
+    and UnitExists("target")
+    and UnitCanAttack("player", "target") == 1
+    and IsSpellInRange("Heroic Strike", "target") == 1
+  then
+    CastSpellByName("Cleave")
+    return
+  end
+
+  -- Mortal Strike (fill open GCDs)
   if
     rage >= RAGE_COST_MORTALSTRIKE
     and is_off_cooldown(SPELL_ID_MORTALSTRIKE)
@@ -482,7 +496,7 @@ local function run_aoe()
     return
   end
 
-  -- Execute (low priority, only as last GCD)
+  -- Execute (last GCD; heavily nerfed since 1.17.2)
   if UnitExists("target") and UnitCanAttack("player", "target") == 1 then
     local target_hp = GetUnitField("target", "health", 1)
     local target_maxhp = GetUnitField("target", "maxHealth", 1)
