@@ -249,6 +249,7 @@ local function pre_rotation(use_sweeping_strikes)
   if use_sweeping_strikes then
     if
       in_combat()
+      and not has_buff(SPELL_ID_SWEEPING_STRIKES)
       and is_off_cooldown(SPELL_ID_SWEEPING_STRIKES)
       and UnitExists("target")
     then
