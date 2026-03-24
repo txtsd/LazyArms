@@ -154,10 +154,9 @@ end
 local function is_off_cooldown(spell_id)
   local cd_table = GetSpellIdCooldown(spell_id)
   if cd_table then
-    local spell_is_off_cooldown = cd_table.isOnCooldown
-    return spell_is_off_cooldown == 0
+    return cd_table.isOnCooldown == 0, (cd_table.individualRemainingMs or 0) / 1000
   end
-  return false
+  return false, 0
 end
 
 -- ============================================================================
