@@ -441,7 +441,7 @@ local function run_aoe()
   local ww_off_cd, ww_remaining_s = is_off_cooldown(SPELL_ID_WHIRLWIND)
   local ww_allowed = has_buff(SPELL_ID_SWEEPING_STRIKES)  -- charges active
     or ss_off_cd                                          -- SS long expired
-    or ss_remaining_s >= ww_remaining_s                  -- SS won't return before WW
+    or ss_remaining_s >= ww_remaining_s                  -- SS still on CD when WW fires; no better window
   if
     ww_allowed
     and ww_off_cd
