@@ -353,7 +353,7 @@ local function run()
     not isCastingSlam
     and rage >= RAGE_COST_MORTALSTRIKE
     and is_off_cooldown(SPELL_ID_MORTALSTRIKE)
-    and rotationState.queued_attack_id ~= SPELL_ID_WHIRLWIND
+    and rotationState.queued_normal_id ~= SPELL_ID_WHIRLWIND
     and UnitExists("target")
     and IsSpellInRange("Mortal Strike", "target") == 1
   then
@@ -366,7 +366,7 @@ local function run()
     not isCastingSlam
     and rage >= RAGE_COST_WHIRLWIND
     and is_off_cooldown(SPELL_ID_WHIRLWIND)
-    and rotationState.queued_attack_id ~= SPELL_ID_MORTALSTRIKE
+    and rotationState.queued_normal_id ~= SPELL_ID_MORTALSTRIKE
     and UnitExists("target")
     and UnitXP("distanceBetween", "player", "target", "AoE") <= 8
   then
@@ -389,8 +389,8 @@ local function run()
     autoSinceSlam
     and rage >= RAGE_COST_SLAM
     and is_off_cooldown(SPELL_ID_SLAM)
-    and rotationState.queued_attack_id ~= SPELL_ID_MORTALSTRIKE
-    and rotationState.queued_attack_id ~= SPELL_ID_WHIRLWIND
+    and rotationState.queued_normal_id ~= SPELL_ID_MORTALSTRIKE
+    and rotationState.queued_normal_id ~= SPELL_ID_WHIRLWIND
     and UnitExists("target")
     and IsSpellInRange("Slam", "target") == 1
   then
@@ -412,7 +412,7 @@ local function run()
     if
       not isCastingSlam
       and would_cap
-      and rotationState.queued_attack_id ~= SPELL_ID_HEROIC_STRIKE
+      and rotationState.queued_on_swing_id ~= SPELL_ID_HEROIC_STRIKE
       and UnitExists("target")
       and IsSpellInRange("Heroic Strike", "target") == 1
     then
